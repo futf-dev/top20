@@ -23,62 +23,6 @@
 </head>
 <body class="min-h-screen bg-slate-100 font-sans text-slate-800">
 
-<!-- ========== JSONBin 初始設定頁 ========== -->
-<div id="setup-page" class="hidden-element min-h-screen flex items-center justify-center p-4">
-    <div class="w-full max-w-lg">
-        <div class="text-center mb-8">
-            <div class="inline-flex items-center justify-center w-16 h-16 bg-violet-600 rounded-2xl shadow-lg mb-4">
-                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg>
-            </div>
-            <h1 class="text-2xl font-bold text-slate-800">雲端帳號設定</h1>
-            <p class="text-slate-500 mt-1 text-sm">首次使用，請設定 JSONBin.io 雲端儲存</p>
-        </div>
-        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 fade-in">
-            <!-- 步驟說明 -->
-            <div class="bg-violet-50 border border-violet-200 rounded-xl p-4 mb-6 text-sm text-violet-800 space-y-2">
-                <p class="font-semibold text-violet-900">📋 設定步驟（約 3 分鐘）</p>
-                <ol class="list-decimal list-inside space-y-1.5 ml-1">
-                    <li>前往 <a href="https://jsonbin.io" target="_blank" class="underline font-medium">jsonbin.io</a> 免費註冊帳號</li>
-                    <li>登入後點右上角頭像 → <b>API Keys</b></li>
-                    <li>點 <b>+ ADD API KEY</b>，複製產生的 <b>Secret Key</b>（以 <code class="bg-violet-100 px-1 rounded">$2b$</code> 開頭）</li>
-                    <li>貼到下方欄位，按「初始化雲端空間」</li>
-                </ol>
-                <p class="text-xs text-violet-600 mt-2">✅ 免費方案每月 10,000 次請求，一般使用完全足夠。</p>
-            </div>
-
-            <div id="setup-error" class="hidden-element mb-4 p-3 bg-red-50 text-red-600 border border-red-200 rounded-lg text-sm"></div>
-
-            <div class="space-y-4">
-                <div>
-                    <label class="block text-sm font-medium text-slate-600 mb-1">JSONBin Secret Key <span class="text-red-400">*</span></label>
-                    <input id="setup-apikey" type="password" placeholder="$2b$10$xxxxxxxxxxxxxxxxxxxxxxxx..." class="w-full border border-slate-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm font-mono" />
-                    <p class="text-xs text-slate-400 mt-1">此 Key 只會儲存在您的瀏覽器本機，不會傳給第三方。</p>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-slate-600 mb-1">管理員密碼設定 <span class="text-red-400">*</span></label>
-                    <input id="setup-adminpwd" type="password" placeholder="請設定 admin 帳號的密碼（至少 6 字元）" class="w-full border border-slate-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm" />
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-slate-600 mb-1">確認管理員密碼 <span class="text-red-400">*</span></label>
-                    <input id="setup-adminpwd2" type="password" placeholder="再次輸入密碼" class="w-full border border-slate-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm" />
-                </div>
-                <button id="setup-btn" onclick="doSetup()" class="w-full bg-violet-600 hover:bg-violet-700 text-white py-2.5 rounded-lg font-medium transition-colors text-sm flex items-center justify-center gap-2">
-                    初始化雲端空間
-                </button>
-            </div>
-
-            <div class="mt-5 pt-5 border-t border-slate-100">
-                <p class="text-xs text-slate-400 text-center">已有設定？若您曾在其他電腦設定過，請輸入相同的 API Key 並點下方連結。</p>
-                <div class="mt-2">
-                    <label class="block text-sm font-medium text-slate-600 mb-1">已有 Bin ID（選填）</label>
-                    <input id="setup-existingbinid" type="text" placeholder="貼上已有的 Users Bin ID（格式：6位英數字）" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-violet-500" />
-                    <p class="text-xs text-slate-400 mt-1">填寫後按「初始化雲端空間」即可連接到現有資料。</p>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
 <!-- ========== 登入頁面 ========== -->
 <div id="auth-page" class="hidden-element min-h-screen flex items-center justify-center p-4">
     <div class="w-full max-w-md">
@@ -111,7 +55,7 @@
                 <p class="text-sm text-slate-500">尚無帳號？
                     <button onclick="showPanel('register')" class="text-blue-600 hover:underline font-medium">申請帳號</button>
                 </p>
-                <button onclick="showSetupPage()" class="text-xs text-slate-400 hover:text-slate-600 mt-3 block mx-auto">⚙️ 更換雲端設定</button>
+                <p class="text-xs text-slate-400 mt-3">☁️ 資料儲存於 JSONBin 雲端</p>
             </div>
         </div>
 
@@ -331,18 +275,24 @@
 
 <script>
 // ============================================================
-//  JSONBin 雲端帳號系統
+//  JSONBin 雲端帳號系統（固定設定，無需手動輸入）
 // ============================================================
-const JSONBIN_BASE = 'https://api.jsonbin.io/v3';
-const CFG_KEY = 'biz_cloud_cfg';   // localStorage 只存設定（API Key + Bin IDs）
-const SESSION_KEY = 'biz_session'; // sessionStorage 存登入狀態
+const JSONBIN_BASE  = 'https://api.jsonbin.io/v3';
+const SESSION_KEY   = 'biz_session';
 
-// ---- 設定管理 ----
-function getCfg() {
-    try { const r = localStorage.getItem(CFG_KEY); return r ? JSON.parse(r) : null; } catch(e) { return null; }
-}
-function saveCfg(cfg) {
-    try { localStorage.setItem(CFG_KEY, JSON.stringify(cfg)); } catch(e) {}
+// ▼▼▼ 固定設定（已寫死，無需再設定）▼▼▼
+const FIXED_API_KEY    = '$2a$10$UceQCMPMjkBeRXVIMCCfh.8jWS7aTALkZHzPo9dAqXZF.EHA5c2Pa';
+const FIXED_USERS_BIN  = '6a219a23da38895dfe874287';
+// pendingBinId 從 users bin 的 _pendingBinId 欄位自動讀取，快取於此
+let _pendingBinId = null;
+
+// 自動取得 pendingBinId（首次呼叫時從雲端讀取，之後快取）
+async function getPendingBinId() {
+    if (_pendingBinId) return _pendingBinId;
+    const data = await binRead(FIXED_USERS_BIN, FIXED_API_KEY);
+    _pendingBinId = data._pendingBinId;
+    if (!_pendingBinId) throw new Error('找不到 Pending Bin，請聯絡管理員');
+    return _pendingBinId;
 }
 
 // ---- 密碼雜湊 ----
@@ -383,24 +333,24 @@ async function binCreate(apiKey, name, data) {
     return j.metadata.id;
 }
 
-// ---- 高階 CRUD ----
+// ---- 高階 CRUD（直接用固定常數）----
 async function getUsers() {
-    const cfg = getCfg();
-    const data = await binRead(cfg.usersBinId, cfg.apiKey);
+    const data = await binRead(FIXED_USERS_BIN, FIXED_API_KEY);
     return data.users || [];
 }
 async function saveUsers(users) {
-    const cfg = getCfg();
-    await binWrite(cfg.usersBinId, cfg.apiKey, { users });
+    // 讀取現有資料以保留 _pendingBinId 等 meta 欄位
+    const existing = await binRead(FIXED_USERS_BIN, FIXED_API_KEY);
+    await binWrite(FIXED_USERS_BIN, FIXED_API_KEY, { ...existing, users });
 }
 async function getPending() {
-    const cfg = getCfg();
-    const data = await binRead(cfg.pendingBinId, cfg.apiKey);
+    const binId = await getPendingBinId();
+    const data = await binRead(binId, FIXED_API_KEY);
     return data.pending || [];
 }
 async function savePending(pending) {
-    const cfg = getCfg();
-    await binWrite(cfg.pendingBinId, cfg.apiKey, { pending });
+    const binId = await getPendingBinId();
+    await binWrite(binId, FIXED_API_KEY, { pending });
 }
 
 // ---- Session ----
@@ -426,71 +376,6 @@ function setBtn(id, loading, text) {
     } else {
         btn.disabled = false;
         btn.innerHTML = text;
-    }
-}
-
-// ============================================================
-//  初始設定頁
-// ============================================================
-function showSetupPage() {
-    ['auth-page','app-page'].forEach(id => document.getElementById(id).classList.add('hidden-element'));
-    document.getElementById('setup-page').classList.remove('hidden-element');
-}
-
-async function doSetup() {
-    const apiKey = document.getElementById('setup-apikey').value.trim();
-    const adminPwd = document.getElementById('setup-adminpwd').value;
-    const adminPwd2 = document.getElementById('setup-adminpwd2').value;
-    const existingBinId = document.getElementById('setup-existingbinid').value.trim();
-    const errEl = document.getElementById('setup-error');
-    errEl.classList.add('hidden-element');
-
-    if (!apiKey) { errEl.textContent = '請輸入 JSONBin API Key'; errEl.classList.remove('hidden-element'); return; }
-
-    if (existingBinId) {
-        // 連線到已有的 Bin
-        setBtn('setup-btn', true, '連線中...');
-        try {
-            // 嘗試讀取現有 users bin
-            const data = await binRead(existingBinId, apiKey);
-            // 找 pending bin（假設同一個 apiKey 下，pending bin id 存在 users bin 的 meta 裡）
-            const pendingBinId = data._pendingBinId;
-            if (!pendingBinId) throw new Error('找不到對應的 Pending Bin ID，請確認 Bin ID 正確。');
-            saveCfg({ apiKey, usersBinId: existingBinId, pendingBinId });
-            setBtn('setup-btn', false, '初始化雲端空間');
-            startApp();
-        } catch(e) {
-            errEl.textContent = '連線失敗：' + e.message;
-            errEl.classList.remove('hidden-element');
-            setBtn('setup-btn', false, '初始化雲端空間');
-        }
-        return;
-    }
-
-    // 全新設定
-    if (!adminPwd) { errEl.textContent = '請設定管理員密碼'; errEl.classList.remove('hidden-element'); return; }
-    if (adminPwd.length < 6) { errEl.textContent = '管理員密碼至少 6 字元'; errEl.classList.remove('hidden-element'); return; }
-    if (adminPwd !== adminPwd2) { errEl.textContent = '兩次密碼不一致'; errEl.classList.remove('hidden-element'); return; }
-
-    setBtn('setup-btn', true, '建立雲端空間中...');
-    try {
-        // 建立 pending bin 先
-        const pendingBinId = await binCreate(apiKey, 'biz-pending', { pending: [] });
-        // 建立 users bin（並把 pendingBinId 存在 meta 欄位供跨裝置取得）
-        const adminUser = { username: 'admin', displayName: '系統管理員', password: hashPwd(adminPwd), role: 'admin', active: true, createdAt: new Date().toISOString() };
-        const usersBinId = await binCreate(apiKey, 'biz-users', { _pendingBinId: pendingBinId, users: [adminUser] });
-
-        saveCfg({ apiKey, usersBinId, pendingBinId });
-        setBtn('setup-btn', false, '初始化雲端空間');
-
-        // 顯示 Bin ID 給用戶記錄
-        alert(`✅ 雲端空間建立成功！\n\n請記下以下資訊（供其他設備使用）：\n\nUsers Bin ID：${usersBinId}\n\n其他設備輸入相同 API Key + 此 Bin ID 即可連線。`);
-
-        startApp();
-    } catch(e) {
-        errEl.textContent = '建立失敗：' + e.message + '（請確認 API Key 正確）';
-        errEl.classList.remove('hidden-element');
-        setBtn('setup-btn', false, '初始化雲端空間');
     }
 }
 
@@ -575,7 +460,6 @@ function doLogout() {
 }
 
 function enterApp(user) {
-    document.getElementById('setup-page').classList.add('hidden-element');
     document.getElementById('auth-page').classList.add('hidden-element');
     document.getElementById('app-page').classList.remove('hidden-element');
     document.getElementById('current-user-display').textContent = `${user.displayName} (${user.username})`;
@@ -738,30 +622,22 @@ async function adminAddUser() {
 }
 
 // ============================================================
-//  啟動流程
+//  啟動流程（固定雲端，自動連線）
 // ============================================================
 async function startApp() {
-    const cfg = getCfg();
-    if (!cfg || !cfg.apiKey || !cfg.usersBinId) {
-        // 沒有設定，顯示設定頁
-        document.getElementById('setup-page').classList.remove('hidden-element');
-        return;
-    }
-
-    // 有設定，檢查 session
+    // 檢查是否有記住的 session
     const session = getSession();
     if (session) {
-        showLoading('驗證登入狀態...');
+        showLoading('自動登入中...');
         try {
             const users = await getUsers();
             const user = users.find(u => u.username === session.username && u.active);
             if (user) { enterApp(user); return; }
             else { clearSession(); }
         } catch(e) {
-            // 連線失敗時，允許進入登入頁讓用戶重試
+            // 雲端連線失敗，降級到登入頁讓用戶重試
         } finally { hideLoading(); }
     }
-
     // 顯示登入頁
     document.getElementById('auth-page').classList.remove('hidden-element');
 }
