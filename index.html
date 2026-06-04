@@ -310,44 +310,117 @@
 
 <script>
 // ============================================================
-//  帳號系統 (localStorage)
+//  帳號系統 (localStorage + 記憶體備援)
 // ============================================================
-const USERS_KEY = 'biz_users';
-const PENDING_KEY = 'biz_pending';
-const SESSION_KEY = 'biz_session';
+const USERS_KEY = 'biz_users_v2';
+const PENDING_KEY = 'biz_pending_v2';
+const SESSION_KEY = 'biz_session_v2';
 
+// ---- localStorage 可用性檢測 ----
+let _lsAvailable = false;
+try {
+    localStorage.setItem('__ls_test__', '1');
+    if (localStorage.getItem('__ls_test__') === '1') { _lsAvailable = true; }
+    localStorage.removeItem('__ls_test__');
+} catch(e) { _lsAvailable = false; }
+
+// 記憶體備援（頁面關閉後消失，但至少本次 session 可用）
+let _memUsers = null;
+let _memPending = null;
+
+if (!_lsAvailable) {
+    console.warn('[Auth] localStorage 不可用，使用記憶體模式（重新整理後資料將消失）');
+    setTimeout(() => {
+        const banner = document.createElement('div');
+        banner.style.cssText = 'position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#f59e0b;color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;z-index:9999;box-shadow:0 2px 8px rgba(0,0,0,0.2)';
+        banner.textContent = '⚠️ 瀏覽器限制 localStorage，帳號資料僅保存至本次關閉視窗前。';
+        document.body.appendChild(banner);
+        setTimeout(() => banner.remove(), 8000);
+    }, 500);
+}
+
+// ---- 密碼雜湊（純字串操作，跨瀏覽器一致） ----
 function hashSimple(str) {
-    // 簡易雜湊（非加密用，僅混淆儲存）
-    let h = 5381;
-    for (let i = 0; i < str.length; i++) h = (h * 33) ^ str.charCodeAt(i);
-    return (h >>> 0).toString(16);
+    // djb2 with safe arithmetic: keep accumulator as string-XOR to avoid float precision
+    let hash = 5381;
+    for (let i = 0; i < str.length; i++) {
+        // Use |0 after each step to clamp to Int32, avoiding float drift
+        hash = (((hash << 5) + hash) | 0) ^ str.charCodeAt(i);
+    }
+    // Convert to unsigned hex
+    return (hash >>> 0).toString(16).padStart(8, '0');
 }
 
+// ---- Storage helpers ----
 function getUsers() {
-    const raw = localStorage.getItem(USERS_KEY);
-    return raw ? JSON.parse(raw) : [];
+    if (!_lsAvailable) return _memUsers ? JSON.parse(JSON.stringify(_memUsers)) : [];
+    try {
+        const raw = localStorage.getItem(USERS_KEY);
+        return raw ? JSON.parse(raw) : [];
+    } catch(e) { return []; }
 }
-function saveUsers(users) { localStorage.setItem(USERS_KEY, JSON.stringify(users)); }
+function saveUsers(users) {
+    if (!_lsAvailable) { _memUsers = JSON.parse(JSON.stringify(users)); return; }
+    try {
+        localStorage.setItem(USERS_KEY, JSON.stringify(users));
+        // 驗證是否真的寫入
+        const verify = localStorage.getItem(USERS_KEY);
+        if (!verify) throw new Error('write verify failed');
+    } catch(e) {
+        console.error('[Auth] saveUsers 失敗：', e);
+        _memUsers = JSON.parse(JSON.stringify(users)); // 降級記憶體
+        alert('⚠️ 帳號儲存失敗（' + e.message + '）\n資料已暫存於記憶體，重新整理後將消失。');
+    }
+}
 
 function getPending() {
-    const raw = localStorage.getItem(PENDING_KEY);
-    return raw ? JSON.parse(raw) : [];
+    if (!_lsAvailable) return _memPending ? JSON.parse(JSON.stringify(_memPending)) : [];
+    try {
+        const raw = localStorage.getItem(PENDING_KEY);
+        return raw ? JSON.parse(raw) : [];
+    } catch(e) { return []; }
 }
-function savePending(p) { localStorage.setItem(PENDING_KEY, JSON.stringify(p)); }
+function savePending(p) {
+    if (!_lsAvailable) { _memPending = JSON.parse(JSON.stringify(p)); return; }
+    try {
+        localStorage.setItem(PENDING_KEY, JSON.stringify(p));
+    } catch(e) {
+        console.error('[Auth] savePending 失敗：', e);
+        _memPending = JSON.parse(JSON.stringify(p));
+    }
+}
 
 function getSession() {
-    const raw = sessionStorage.getItem(SESSION_KEY);
-    return raw ? JSON.parse(raw) : null;
+    try {
+        const raw = sessionStorage.getItem(SESSION_KEY);
+        return raw ? JSON.parse(raw) : null;
+    } catch(e) { return null; }
 }
-function saveSession(user) { sessionStorage.setItem(SESSION_KEY, JSON.stringify(user)); }
-function clearSession() { sessionStorage.removeItem(SESSION_KEY); }
+function saveSession(user) {
+    try { sessionStorage.setItem(SESSION_KEY, JSON.stringify(user)); } catch(e) {}
+}
+function clearSession() {
+    try { sessionStorage.removeItem(SESSION_KEY); } catch(e) {}
+}
 
-// 初始化：確保 admin 帳號存在
+// 初始化：確保 admin 帳號存在，並修正舊版 hash 不相容問題
+const HASH_VERSION = 'v2'; // 每次改 hashSimple 就升版號
 function ensureAdmin() {
     let users = getUsers();
-    if (!users.find(u => u.username === 'admin')) {
-        users.push({ username: 'admin', displayName: '系統管理員', password: hashSimple('Admin@2026'), role: 'admin', active: true, createdAt: new Date().toISOString() });
+    const adminUser = users.find(u => u.username === 'admin');
+    const adminHash = hashSimple('Admin@2026');
+    if (!adminUser) {
+        // 全新環境：建立 admin
+        users.push({ username: 'admin', displayName: '系統管理員', password: adminHash, hashVer: HASH_VERSION, role: 'admin', active: true, createdAt: new Date().toISOString() });
         saveUsers(users);
+    } else if (adminUser.hashVer !== HASH_VERSION) {
+        // Hash 函式改版：重設 admin 密碼 hash（其他帳號密碼需重設）
+        adminUser.password = adminHash;
+        adminUser.hashVer = HASH_VERSION;
+        // 其他帳號標記需重設密碼（因舊 hash 無法驗證）
+        users.forEach(u => { if (u.username !== 'admin' && u.hashVer !== HASH_VERSION) u.needsReset = true; });
+        saveUsers(users);
+        console.warn('[Auth] Hash 版本升級，非 admin 帳號需重設密碼');
     }
 }
 
@@ -385,6 +458,9 @@ function doLogin() {
     }
     if (!user.active) {
         errEl.textContent = '帳號尚未啟用或已被停用，請聯絡管理員'; errEl.classList.remove('hidden-element'); return;
+    }
+    if (user.needsReset) {
+        errEl.textContent = '系統升級，請聯絡管理員重設您的密碼'; errEl.classList.remove('hidden-element'); return;
     }
     if (user.password !== hashSimple(password)) {
         errEl.textContent = '密碼錯誤'; errEl.classList.remove('hidden-element'); return;
@@ -510,7 +586,7 @@ function approvePending(idx) {
     const pending = getPending();
     const p = pending[idx];
     const users = getUsers();
-    users.push({ username: p.username, displayName: p.displayName, password: p.password, role: 'user', active: true, createdAt: new Date().toISOString() });
+    users.push({ username: p.username, displayName: p.displayName, password: p.password, hashVer: HASH_VERSION, role: 'user', active: true, createdAt: new Date().toISOString() });
     saveUsers(users);
     pending.splice(idx, 1);
     savePending(pending);
@@ -578,7 +654,7 @@ function adminAddUser() {
     const users = getUsers();
     if (users.find(u => u.username === username)) { setMsg('add-user-msg', '此帳號名稱已存在'); return; }
 
-    users.push({ username, displayName, password: hashSimple(password), role, active: true, createdAt: new Date().toISOString() });
+    users.push({ username, displayName, password: hashSimple(password), hashVer: HASH_VERSION, role, active: true, createdAt: new Date().toISOString() });
     saveUsers(users);
 
     document.getElementById('add-username').value = '';
@@ -588,8 +664,17 @@ function adminAddUser() {
 }
 
 // ============================================================
-//  啟動：檢查 session
+//  啟動：清除舊版 key（v1 換 v2），然後檢查 session
 // ============================================================
+try {
+    if (localStorage.getItem('biz_users') !== null) {
+        localStorage.removeItem('biz_users');    // 舊版 key 清除
+        localStorage.removeItem('biz_pending');
+        localStorage.removeItem('biz_session');
+        console.info('[Auth] 已清除舊版 v1 資料，採用新版儲存格式。');
+    }
+} catch(e) {}
+
 ensureAdmin();
 const existingSession = getSession();
 if (existingSession) {
