@@ -1,0 +1,1030 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>醫療業績分析戰情室</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .hidden-element { display: none !important; }
+        .fade-in { animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="min-h-screen bg-slate-100 font-sans text-slate-800">
+
+<!-- ========== 登入頁面 ========== -->
+<div id="auth-page" class="min-h-screen flex items-center justify-center p-4">
+    <div class="w-full max-w-md">
+        <div class="text-center mb-8">
+            <div class="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-2xl shadow-lg mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+            </div>
+            <h1 class="text-2xl font-bold text-slate-800">前20大醫院業績分析</h1>
+            <p class="text-slate-500 mt-1 text-sm">請先登入以進入戰情室</p>
+        </div>
+
+        <!-- 登入面板 -->
+        <div id="login-panel" class="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 fade-in">
+            <h2 class="text-lg font-semibold mb-6 text-slate-700">帳號登入</h2>
+            <div id="login-error" class="hidden-element mb-4 p-3 bg-red-50 text-red-600 border border-red-200 rounded-lg text-sm"></div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1">帳號</label>
+                    <input id="login-username" type="text" placeholder="請輸入帳號" class="w-full border border-slate-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" />
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1">密碼</label>
+                    <input id="login-password" type="password" placeholder="請輸入密碼" class="w-full border border-slate-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" />
+                </div>
+                <button onclick="doLogin()" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-lg font-medium transition-colors text-sm">登入</button>
+            </div>
+            <div class="mt-6 pt-6 border-t border-slate-100 text-center">
+                <p class="text-sm text-slate-500">尚無帳號？
+                    <button onclick="showPanel('register')" class="text-blue-600 hover:underline font-medium">申請帳號</button>
+                </p>
+            </div>
+        </div>
+
+        <!-- 申請帳號面板 -->
+        <div id="register-panel" class="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 fade-in hidden-element">
+            <h2 class="text-lg font-semibold mb-6 text-slate-700">申請新帳號</h2>
+            <div id="register-msg" class="hidden-element mb-4 p-3 rounded-lg text-sm"></div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1">帳號 <span class="text-red-400">*</span></label>
+                    <input id="reg-username" type="text" placeholder="英文或數字，4~20字元" class="w-full border border-slate-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" />
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1">姓名 <span class="text-red-400">*</span></label>
+                    <input id="reg-displayname" type="text" placeholder="您的真實姓名或顯示名稱" class="w-full border border-slate-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" />
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1">密碼 <span class="text-red-400">*</span></label>
+                    <input id="reg-password" type="password" placeholder="至少 6 字元" class="w-full border border-slate-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" />
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1">確認密碼 <span class="text-red-400">*</span></label>
+                    <input id="reg-password2" type="password" placeholder="再次輸入密碼" class="w-full border border-slate-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" />
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1">申請說明 (選填)</label>
+                    <input id="reg-note" type="text" placeholder="說明您的職務或申請用途" class="w-full border border-slate-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" />
+                </div>
+                <button onclick="doRegister()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-lg font-medium transition-colors text-sm">送出申請</button>
+            </div>
+            <div class="mt-6 pt-6 border-t border-slate-100 text-center">
+                <button onclick="showPanel('login')" class="text-sm text-blue-600 hover:underline font-medium">← 返回登入</button>
+            </div>
+        </div>
+
+        <!-- 等待審核提示 -->
+        <div id="pending-panel" class="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 fade-in hidden-element text-center">
+            <div class="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+            </div>
+            <h2 class="text-lg font-semibold text-slate-700 mb-2">申請已送出，等待審核</h2>
+            <p class="text-sm text-slate-500 mb-6">您的帳號申請已收到，請等待管理員審核通過後再登入。</p>
+            <button onclick="showPanel('login')" class="text-sm text-blue-600 hover:underline font-medium">← 返回登入</button>
+        </div>
+    </div>
+</div>
+
+<!-- ========== 主程式頁面 ========== -->
+<div id="app-page" class="hidden-element min-h-screen bg-slate-50 p-6">
+
+    <!-- 頂部 Header -->
+    <div class="max-w-7xl mx-auto mb-8 bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex justify-between items-center flex-wrap gap-3">
+        <div class="flex items-center gap-4">
+            <div>
+                <h1 class="text-2xl font-bold text-slate-800 flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-600"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+                    前20大醫院業績成長分析
+                </h1>
+                <p class="text-slate-500 text-sm mt-0.5">登入者：<span id="current-user-display" class="font-medium text-blue-600"></span></p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2">
+            <!-- 管理員按鈕（僅 admin 可見） -->
+            <button id="admin-btn" onclick="showAdminModal()" class="hidden-element bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-lg font-medium text-sm transition-colors flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                管理帳號
+                <span id="pending-badge" class="hidden-element bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5 min-w-[18px] text-center"></span>
+            </button>
+            <label class="cursor-pointer bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg font-medium text-sm shadow-sm transition-colors flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                <span id="upload-btn-text">載入出貨明細</span>
+                <input type="file" accept=".csv, .xlsx, .xls" class="hidden" id="file-upload" />
+            </label>
+            <button onclick="doLogout()" class="bg-slate-100 hover:bg-red-50 hover:text-red-600 text-slate-600 px-4 py-2 rounded-lg font-medium text-sm transition-colors flex items-center gap-1.5">
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                登出
+            </button>
+        </div>
+    </div>
+
+    <!-- 錯誤訊息區 -->
+    <div id="error-container" class="max-w-7xl mx-auto mb-6 p-4 bg-red-50 text-red-700 border border-red-200 rounded-lg items-center gap-2 hidden-element flex">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+        <span id="error-message"></span>
+    </div>
+
+    <!-- 初始等待畫面 -->
+    <div id="empty-state" class="max-w-7xl mx-auto bg-white rounded-2xl shadow-sm border border-slate-100 py-20 flex flex-col items-center justify-center text-slate-500">
+        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mb-4 text-blue-200"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+        <p class="text-xl font-medium text-slate-700 mb-2">等待載入資料</p>
+        <p>請點擊右上角按鈕上傳「出貨明細」或「DATA」CSV 或 Excel 檔案以啟動戰情室。</p>
+        <p class="text-sm mt-4 text-slate-400">系統將自動計算成長率，並支援切換比較基準月份。</p>
+    </div>
+
+    <!-- 主要內容區 -->
+    <div id="main-content" class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 hidden-element">
+
+        <!-- 左側：篩選器與 Top 20 列表 -->
+        <div class="lg:col-span-5 space-y-6">
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 relative z-30">
+                <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
+                    交叉分析篩選
+                </h2>
+                <div class="space-y-4">
+                    <div id="month-multiselect"></div>
+                    <hr class="border-slate-100 my-2">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-600 mb-1">業務代號</label>
+                        <select id="rep-filter" class="w-full border border-slate-200 rounded-lg p-2 bg-slate-50 focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm">
+                            <option value="">全部業務</option>
+                        </select>
+                    </div>
+                    <div id="hospital-multiselect"></div>
+                    <div id="category-multiselect"></div>
+                    <div id="product-multiselect"></div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden relative z-10">
+                <div class="p-5 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
+                    <h2 class="text-lg font-semibold flex items-center gap-2">
+                        Top 20 醫院總表 <span class="text-sm font-normal text-slate-500 ml-2">(點擊查看明細)</span>
+                    </h2>
+                </div>
+                <div class="overflow-x-auto max-h-[500px] overflow-y-auto">
+                    <table class="w-full text-sm text-left">
+                        <thead class="text-xs text-slate-500 bg-slate-50 sticky top-0 shadow-sm z-0">
+                            <tr>
+                                <th class="px-4 py-3">排名/醫院</th>
+                                <th class="px-4 py-3 text-right">25年月均</th>
+                                <th class="px-4 py-3 text-right text-blue-700 font-bold" id="th-top20-target">26年月均</th>
+                                <th class="px-4 py-3 text-center">狀態</th>
+                            </tr>
+                        </thead>
+                        <tbody id="top20-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 右側：醫院明細與圖表 -->
+        <div class="lg:col-span-7 space-y-6 relative z-10">
+            <div id="hospital-empty" class="bg-white rounded-2xl shadow-sm border border-slate-100 h-full min-h-[500px] flex flex-col items-center justify-center text-slate-400">
+                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mb-4 text-slate-200"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                <p class="text-lg font-medium text-slate-500">請從左側點選一間醫院</p>
+                <p class="text-sm mt-2">即可檢視該醫院的單品明細、總金額趨勢線及各產品曲線圖。</p>
+            </div>
+
+            <div id="hospital-details" class="hidden-element space-y-6">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                    <div class="flex justify-between items-start mb-6">
+                        <div>
+                            <h2 id="detail-hosp-name" class="text-2xl font-bold text-slate-800"></h2>
+                            <p id="detail-hosp-rep" class="text-slate-500 mt-1"></p>
+                        </div>
+                        <div id="detail-hosp-status" class="px-4 py-2 rounded-full flex items-center gap-2 font-bold text-lg bg-slate-50"></div>
+                    </div>
+                    <div class="space-y-8">
+                        <div>
+                            <h3 class="text-md font-semibold text-slate-700 mb-4 flex items-center gap-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+                                總體金額趨勢
+                            </h3>
+                            <div class="h-64 w-full relative"><canvas id="totalChart"></canvas></div>
+                        </div>
+                        <div>
+                            <h3 class="text-md font-semibold text-slate-700 mb-4 flex items-center gap-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="16 6 23 6 23 13"></polyline></svg>
+                                產品別金額趨勢
+                            </h3>
+                            <div class="h-80 w-full relative"><canvas id="productChart"></canvas></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                    <div class="p-5 border-b border-slate-100 bg-slate-50">
+                        <h2 class="text-lg font-semibold text-slate-800">單格產品貢獻明細</h2>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm text-left">
+                            <thead class="text-xs text-slate-500 bg-slate-50">
+                                <tr>
+                                    <th class="px-4 py-3">類別</th>
+                                    <th class="px-4 py-3">產品名稱</th>
+                                    <th class="px-4 py-3 text-right">25年月均</th>
+                                    <th class="px-4 py-3 text-right text-blue-700 font-bold" id="th-detail-target">26年月均</th>
+                                    <th class="px-4 py-3 text-center">成長分析</th>
+                                </tr>
+                            </thead>
+                            <tbody id="detail-products-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ========== 管理員 Modal ========== -->
+<div id="admin-modal" class="hidden-element fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+        <div class="p-6 border-b border-slate-100 flex justify-between items-center">
+            <h2 class="text-lg font-bold flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle></svg>
+                帳號管理後台
+            </h2>
+            <button onclick="closeAdminModal()" class="text-slate-400 hover:text-slate-700 text-2xl leading-none">&times;</button>
+        </div>
+
+        <!-- Tab -->
+        <div class="flex border-b border-slate-100">
+            <button onclick="switchAdminTab('pending')" id="tab-pending" class="admin-tab px-6 py-3 text-sm font-medium border-b-2 border-blue-600 text-blue-600">待審核申請 <span id="admin-pending-count" class="bg-red-500 text-white text-xs rounded-full px-1.5 ml-1"></span></button>
+            <button onclick="switchAdminTab('users')" id="tab-users" class="admin-tab px-6 py-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700">帳號列表</button>
+            <button onclick="switchAdminTab('add')" id="tab-add" class="admin-tab px-6 py-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700">新增帳號</button>
+        </div>
+
+        <div class="overflow-y-auto flex-1 p-6">
+            <!-- 待審核 -->
+            <div id="admin-tab-pending">
+                <div id="pending-list"></div>
+            </div>
+
+            <!-- 帳號列表 -->
+            <div id="admin-tab-users" class="hidden-element">
+                <div id="users-list"></div>
+            </div>
+
+            <!-- 新增帳號 -->
+            <div id="admin-tab-add" class="hidden-element">
+                <div id="add-user-msg" class="hidden-element mb-4 p-3 rounded-lg text-sm"></div>
+                <div class="space-y-4 max-w-sm">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-600 mb-1">帳號</label>
+                        <input id="add-username" type="text" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="英數字 4~20 字元" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-600 mb-1">姓名</label>
+                        <input id="add-displayname" type="text" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="顯示名稱" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-600 mb-1">密碼</label>
+                        <input id="add-password" type="password" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="至少 6 字元" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-600 mb-1">角色</label>
+                        <select id="add-role" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="user">一般用戶</option>
+                            <option value="admin">管理員</option>
+                        </select>
+                    </div>
+                    <button onclick="adminAddUser()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg text-sm font-medium transition-colors">新增帳號</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// ============================================================
+//  帳號系統 (localStorage)
+// ============================================================
+const USERS_KEY = 'biz_users';
+const PENDING_KEY = 'biz_pending';
+const SESSION_KEY = 'biz_session';
+
+function hashSimple(str) {
+    // 簡易雜湊（非加密用，僅混淆儲存）
+    let h = 5381;
+    for (let i = 0; i < str.length; i++) h = (h * 33) ^ str.charCodeAt(i);
+    return (h >>> 0).toString(16);
+}
+
+function getUsers() {
+    const raw = localStorage.getItem(USERS_KEY);
+    return raw ? JSON.parse(raw) : [];
+}
+function saveUsers(users) { localStorage.setItem(USERS_KEY, JSON.stringify(users)); }
+
+function getPending() {
+    const raw = localStorage.getItem(PENDING_KEY);
+    return raw ? JSON.parse(raw) : [];
+}
+function savePending(p) { localStorage.setItem(PENDING_KEY, JSON.stringify(p)); }
+
+function getSession() {
+    const raw = sessionStorage.getItem(SESSION_KEY);
+    return raw ? JSON.parse(raw) : null;
+}
+function saveSession(user) { sessionStorage.setItem(SESSION_KEY, JSON.stringify(user)); }
+function clearSession() { sessionStorage.removeItem(SESSION_KEY); }
+
+// 初始化：確保 admin 帳號存在
+function ensureAdmin() {
+    let users = getUsers();
+    if (!users.find(u => u.username === 'admin')) {
+        users.push({ username: 'admin', displayName: '系統管理員', password: hashSimple('Admin@2026'), role: 'admin', active: true, createdAt: new Date().toISOString() });
+        saveUsers(users);
+    }
+}
+
+// ============================================================
+//  Auth UI
+// ============================================================
+function showPanel(name) {
+    ['login-panel', 'register-panel', 'pending-panel'].forEach(id => {
+        document.getElementById(id).classList.add('hidden-element');
+    });
+    document.getElementById(name + '-panel').classList.remove('hidden-element');
+}
+
+function setMsg(elId, msg, isError = true) {
+    const el = document.getElementById(elId);
+    if (!msg) { el.classList.add('hidden-element'); return; }
+    el.textContent = msg;
+    el.className = `mb-4 p-3 rounded-lg text-sm ${isError ? 'bg-red-50 text-red-600 border border-red-200' : 'bg-green-50 text-green-700 border border-green-200'}`;
+}
+
+function doLogin() {
+    const username = document.getElementById('login-username').value.trim();
+    const password = document.getElementById('login-password').value;
+    const errEl = document.getElementById('login-error');
+
+    if (!username || !password) {
+        errEl.textContent = '請填寫帳號與密碼'; errEl.classList.remove('hidden-element'); return;
+    }
+
+    const users = getUsers();
+    const user = users.find(u => u.username === username);
+
+    if (!user) {
+        errEl.textContent = '帳號不存在'; errEl.classList.remove('hidden-element'); return;
+    }
+    if (!user.active) {
+        errEl.textContent = '帳號尚未啟用或已被停用，請聯絡管理員'; errEl.classList.remove('hidden-element'); return;
+    }
+    if (user.password !== hashSimple(password)) {
+        errEl.textContent = '密碼錯誤'; errEl.classList.remove('hidden-element'); return;
+    }
+
+    errEl.classList.add('hidden-element');
+    saveSession({ username: user.username, displayName: user.displayName, role: user.role });
+    enterApp(user);
+}
+
+// Enter on input
+['login-username','login-password'].forEach(id => {
+    document.getElementById(id).addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+});
+
+function doRegister() {
+    const username = document.getElementById('reg-username').value.trim();
+    const displayName = document.getElementById('reg-displayname').value.trim();
+    const password = document.getElementById('reg-password').value;
+    const password2 = document.getElementById('reg-password2').value;
+    const note = document.getElementById('reg-note').value.trim();
+
+    if (!username || !displayName || !password) { setMsg('register-msg', '請填寫所有必填欄位'); return; }
+    if (!/^[a-zA-Z0-9_]{4,20}$/.test(username)) { setMsg('register-msg', '帳號只能包含英文、數字或底線，長度 4~20 字元'); return; }
+    if (password.length < 6) { setMsg('register-msg', '密碼至少需要 6 個字元'); return; }
+    if (password !== password2) { setMsg('register-msg', '兩次密碼輸入不一致'); return; }
+
+    const users = getUsers();
+    if (users.find(u => u.username === username)) { setMsg('register-msg', '此帳號名稱已被使用，請更換'); return; }
+
+    const pending = getPending();
+    if (pending.find(p => p.username === username)) { setMsg('register-msg', '此帳號已有待審核的申請'); return; }
+
+    pending.push({ username, displayName, password: hashSimple(password), note, requestedAt: new Date().toISOString() });
+    savePending(pending);
+
+    showPanel('pending');
+}
+
+function doLogout() {
+    clearSession();
+    document.getElementById('app-page').classList.add('hidden-element');
+    document.getElementById('auth-page').classList.remove('hidden-element');
+    showPanel('login');
+}
+
+function enterApp(user) {
+    document.getElementById('auth-page').classList.add('hidden-element');
+    document.getElementById('app-page').classList.remove('hidden-element');
+    document.getElementById('current-user-display').textContent = `${user.displayName} (${user.username})`;
+
+    if (user.role === 'admin') {
+        document.getElementById('admin-btn').classList.remove('hidden-element');
+        updatePendingBadge();
+    }
+}
+
+function updatePendingBadge() {
+    const count = getPending().length;
+    const badge = document.getElementById('pending-badge');
+    const adminCount = document.getElementById('admin-pending-count');
+    if (count > 0) {
+        badge.textContent = count; badge.classList.remove('hidden-element');
+        if (adminCount) { adminCount.textContent = count; }
+    } else {
+        badge.classList.add('hidden-element');
+        if (adminCount) adminCount.textContent = '';
+    }
+}
+
+// ============================================================
+//  Admin Modal
+// ============================================================
+function showAdminModal() {
+    document.getElementById('admin-modal').classList.remove('hidden-element');
+    switchAdminTab('pending');
+}
+function closeAdminModal() {
+    document.getElementById('admin-modal').classList.add('hidden-element');
+}
+
+function switchAdminTab(tab) {
+    ['pending', 'users', 'add'].forEach(t => {
+        document.getElementById('admin-tab-' + t).classList.add('hidden-element');
+        const btn = document.getElementById('tab-' + t);
+        btn.classList.remove('border-blue-600', 'text-blue-600');
+        btn.classList.add('border-transparent', 'text-slate-500');
+    });
+    document.getElementById('admin-tab-' + tab).classList.remove('hidden-element');
+    const active = document.getElementById('tab-' + tab);
+    active.classList.add('border-blue-600', 'text-blue-600');
+    active.classList.remove('border-transparent', 'text-slate-500');
+
+    if (tab === 'pending') renderPendingList();
+    if (tab === 'users') renderUsersList();
+}
+
+function renderPendingList() {
+    const pending = getPending();
+    const el = document.getElementById('pending-list');
+    const countEl = document.getElementById('admin-pending-count');
+    if (countEl) countEl.textContent = pending.length > 0 ? pending.length : '';
+
+    if (pending.length === 0) {
+        el.innerHTML = '<div class="text-center py-12 text-slate-400">目前沒有待審核的申請</div>'; return;
+    }
+    el.innerHTML = pending.map((p, i) => `
+        <div class="flex items-start justify-between p-4 border border-slate-200 rounded-xl mb-3 bg-slate-50">
+            <div>
+                <p class="font-semibold text-slate-800">${p.displayName} <span class="text-slate-400 font-normal text-sm">@${p.username}</span></p>
+                ${p.note ? `<p class="text-sm text-slate-500 mt-1">說明：${p.note}</p>` : ''}
+                <p class="text-xs text-slate-400 mt-1">申請時間：${new Date(p.requestedAt).toLocaleString('zh-TW')}</p>
+            </div>
+            <div class="flex gap-2 ml-4 flex-shrink-0">
+                <button onclick="approvePending(${i})" class="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition-colors">核准</button>
+                <button onclick="rejectPending(${i})" class="bg-red-100 hover:bg-red-200 text-red-600 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors">拒絕</button>
+            </div>
+        </div>
+    `).join('');
+}
+
+function approvePending(idx) {
+    const pending = getPending();
+    const p = pending[idx];
+    const users = getUsers();
+    users.push({ username: p.username, displayName: p.displayName, password: p.password, role: 'user', active: true, createdAt: new Date().toISOString() });
+    saveUsers(users);
+    pending.splice(idx, 1);
+    savePending(pending);
+    updatePendingBadge();
+    renderPendingList();
+}
+
+function rejectPending(idx) {
+    if (!confirm('確定要拒絕此申請並刪除？')) return;
+    const pending = getPending();
+    pending.splice(idx, 1);
+    savePending(pending);
+    updatePendingBadge();
+    renderPendingList();
+}
+
+function renderUsersList() {
+    const users = getUsers();
+    const el = document.getElementById('users-list');
+    el.innerHTML = users.map((u, i) => `
+        <div class="flex items-center justify-between p-4 border border-slate-200 rounded-xl mb-3 ${u.active ? 'bg-white' : 'bg-slate-50 opacity-60'}">
+            <div>
+                <p class="font-semibold text-slate-800">${u.displayName} <span class="text-slate-400 font-normal text-sm">@${u.username}</span>
+                    ${u.role === 'admin' ? '<span class="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">管理員</span>' : ''}
+                    ${!u.active ? '<span class="ml-2 text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full">停用</span>' : ''}
+                </p>
+                <p class="text-xs text-slate-400 mt-0.5">建立：${new Date(u.createdAt).toLocaleString('zh-TW')}</p>
+            </div>
+            ${u.username !== 'admin' ? `
+            <div class="flex gap-2 ml-4">
+                <button onclick="toggleUser(${i})" class="${u.active ? 'bg-yellow-100 hover:bg-yellow-200 text-yellow-700' : 'bg-green-100 hover:bg-green-200 text-green-700'} px-3 py-1.5 rounded-lg text-xs font-medium transition-colors">
+                    ${u.active ? '停用' : '啟用'}
+                </button>
+                <button onclick="deleteUser(${i})" class="bg-red-100 hover:bg-red-200 text-red-600 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors">刪除</button>
+            </div>` : '<span class="text-xs text-slate-400 ml-4">系統帳號</span>'}
+        </div>
+    `).join('');
+}
+
+function toggleUser(idx) {
+    const users = getUsers();
+    users[idx].active = !users[idx].active;
+    saveUsers(users);
+    renderUsersList();
+}
+
+function deleteUser(idx) {
+    if (!confirm('確定要刪除此帳號？此操作無法復原。')) return;
+    const users = getUsers();
+    users.splice(idx, 1);
+    saveUsers(users);
+    renderUsersList();
+}
+
+function adminAddUser() {
+    const username = document.getElementById('add-username').value.trim();
+    const displayName = document.getElementById('add-displayname').value.trim();
+    const password = document.getElementById('add-password').value;
+    const role = document.getElementById('add-role').value;
+
+    if (!username || !displayName || !password) { setMsg('add-user-msg', '請填寫所有欄位'); return; }
+    if (!/^[a-zA-Z0-9_]{4,20}$/.test(username)) { setMsg('add-user-msg', '帳號格式不正確 (英數字 4~20 字元)'); return; }
+    if (password.length < 6) { setMsg('add-user-msg', '密碼至少 6 字元'); return; }
+
+    const users = getUsers();
+    if (users.find(u => u.username === username)) { setMsg('add-user-msg', '此帳號名稱已存在'); return; }
+
+    users.push({ username, displayName, password: hashSimple(password), role, active: true, createdAt: new Date().toISOString() });
+    saveUsers(users);
+
+    document.getElementById('add-username').value = '';
+    document.getElementById('add-displayname').value = '';
+    document.getElementById('add-password').value = '';
+    setMsg('add-user-msg', `帳號 ${username} 已成功建立！`, false);
+}
+
+// ============================================================
+//  啟動：檢查 session
+// ============================================================
+ensureAdmin();
+const existingSession = getSession();
+if (existingSession) {
+    const users = getUsers();
+    const user = users.find(u => u.username === existingSession.username && u.active);
+    if (user) {
+        document.getElementById('auth-page').classList.add('hidden-element');
+        enterApp(user);
+    } else {
+        clearSession();
+    }
+}
+
+// ============================================================
+//  以下為原始業績分析程式碼（完整保留）
+// ============================================================
+let rawData = [];
+let filters = { rep: '', hospitals: [], categories: [], products: [], months: ['1月', '2月', '3月'] };
+let latestDataMonth = '202603';
+let selectedHospital = null;
+let processedData = [];
+let totalChartInstance = null;
+let productChartInstance = null;
+
+const ICON_UP = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-green-500"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="16 6 23 6 23 13"></polyline></svg>`;
+const ICON_DOWN = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-red-500"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline><polyline points="16 18 23 18 23 11"></polyline></svg>`;
+const ICON_MINUS = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-yellow-500"><line x1="5" y1="12" x2="19" y2="12"></line></svg>`;
+const ICON_CHECK = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="text-white"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+
+const formatMoney = (num) => new Intl.NumberFormat('en-US').format(Math.round(num));
+
+function showError(msg) {
+    const errContainer = document.getElementById('error-container');
+    const errMsg = document.getElementById('error-message');
+    if (msg) { errMsg.textContent = msg; errContainer.classList.remove('hidden-element'); }
+    else { errContainer.classList.add('hidden-element'); }
+}
+
+function extractTransactions(aoa) {
+    let headerIdx = -1;
+    for (let i = 0; i < Math.min(20, aoa.length); i++) {
+        if (!aoa[i]) continue;
+        const rowStr = aoa[i].join('');
+        if (rowStr.includes('業代碼') && (rowStr.includes('客戶名稱') || rowStr.includes('客戶'))) { headerIdx = i; break; }
+    }
+    if (headerIdx === -1) return null;
+    const headers = aoa[headerIdx].map(h => String(h || '').trim());
+    const hasMonthAndAmount = headers.includes('年月') && headers.includes('業績金額');
+    const hasValueCol = headers.includes('數值');
+    const format = hasMonthAndAmount ? 'flat' : (hasValueCol ? 'pivot' : null);
+    if (!format) return null;
+    const txs = [];
+    for (let i = headerIdx + 1; i < aoa.length; i++) {
+        const rowArr = aoa[i];
+        if (!rowArr || rowArr.length === 0) continue;
+        const row = {};
+        headers.forEach((h, idx) => { row[h] = rowArr[idx]; });
+        const rep = String(row['業代碼'] || '').trim() || '未分派';
+        const category = String(row['類別'] || '').trim() || '未分類';
+        const rawProductName = String(row['產品名稱'] || '').trim();
+        const rawProductSeries = String(row['產品系列'] || '').trim();
+        let product = rawProductName || rawProductSeries || '未知產品';
+        const hospital = String(row['客戶名稱'] || row['客戶'] || '').trim();
+        if (!hospital) continue;
+        const searchStr = (rawProductName + ' ' + rawProductSeries).toUpperCase();
+        if (searchStr.includes('LOTE')) product = 'Lote FC';
+        else if (searchStr.includes('UBIXA 5') || searchStr.includes('EXPREXA 5') || searchStr.includes('XPREXA 5')) product = 'Xprexa 5mg';
+        else if (searchStr.includes('UBIXA 10') || searchStr.includes('EXPREXA 10') || searchStr.includes('XPREXA 10')) product = 'Xprexa 10mg';
+        if (format === 'pivot') {
+            if (!row['數值'] || !String(row['數值']).includes('業績金額')) continue;
+            headers.forEach(key => {
+                if (key && String(key).match(/^202[56]\d{2}$/)) {
+                    const val = parseFloat(String(row[key] || '').replace(/,/g, '')) || 0;
+                    if (val !== 0) txs.push({ rep, category, product, hospital, month: String(key), amount: val });
+                }
+            });
+        } else if (format === 'flat') {
+            const val = parseFloat(String(row['業績金額'] || '').replace(/,/g, '')) || 0;
+            if (val !== 0) txs.push({ rep, category, product, hospital, month: String(row['年月']), amount: val });
+        }
+    }
+    return txs;
+}
+
+document.getElementById('file-upload').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const btnText = document.getElementById('upload-btn-text');
+    btnText.textContent = '處理中...';
+    showError('');
+    const fileExt = file.name.split('.').pop().toLowerCase();
+    if (fileExt === 'csv') {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            Papa.parse(e.target.result, { header: false, skipEmptyLines: true, complete: (results) => {
+                const txs = extractTransactions(results.data);
+                if (txs && txs.length > 0) initializeData(txs);
+                else showError('無法從 CSV 中識別正確的業績資料。');
+                btnText.textContent = '載入出貨明細';
+            }, error: (err) => { showError('CSV 解析失敗：' + err.message); btnText.textContent = '載入出貨明細'; } });
+        };
+        reader.readAsText(file);
+    } else if (fileExt === 'xlsx' || fileExt === 'xls') {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                let foundTxs = null;
+                const prioritizedSheets = [...workbook.SheetNames].sort((a, b) => {
+                    if (a.toUpperCase().includes('出貨') || a.toUpperCase().includes('DATA')) return -1;
+                    if (b.toUpperCase().includes('出貨') || b.toUpperCase().includes('DATA')) return 1;
+                    return 0;
+                });
+                for (let sheetName of prioritizedSheets) {
+                    const worksheet = workbook.Sheets[sheetName];
+                    const aoa = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
+                    const txs = extractTransactions(aoa);
+                    if (txs && txs.length > 0) { foundTxs = txs; break; }
+                }
+                if (foundTxs) initializeData(foundTxs);
+                else showError('無法在 Excel 檔案中找到有效的業績資料。');
+            } catch (err) { showError('Excel 解析失敗：' + err.message); }
+            btnText.textContent = '載入出貨明細';
+        };
+        reader.readAsArrayBuffer(file);
+    } else {
+        showError('不支援的檔案格式，請上傳 CSV 或 Excel 檔案。');
+        btnText.textContent = '載入出貨明細';
+    }
+});
+
+function initializeData(txs) {
+    rawData = txs;
+    filters = { rep: '', hospitals: [], categories: [], products: [], months: filters.months.length > 0 ? filters.months : ['1月', '2月', '3月'] };
+    selectedHospital = null;
+    latestDataMonth = '202501';
+    rawData.forEach(tx => { if (tx.month > latestDataMonth) latestDataMonth = tx.month; });
+    document.getElementById('empty-state').classList.add('hidden-element');
+    document.getElementById('main-content').classList.remove('hidden-element');
+    updateFiltersUI('init');
+    calculateAndRender();
+}
+
+class MultiSelect {
+    constructor(containerId, label, placeholder, type, iconSvg = null, emptyMeansAll = true) {
+        this.container = document.getElementById(containerId);
+        this.label = label; this.placeholder = placeholder; this.type = type;
+        this.iconSvg = iconSvg || `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-500 flex-shrink-0"><polyline points="6 9 12 15 18 9"></polyline></svg>`;
+        this.emptyMeansAll = emptyMeansAll; this.options = []; this.selected = []; this.isOpen = false; this.searchTerm = '';
+        this.render();
+    }
+    setOptions(newOptions, isInit = false) {
+        const wasAllSelected = this.options.length > 0 && this.selected.length === this.options.length;
+        this.options = newOptions;
+        if (isInit || wasAllSelected) { this.selected = [...newOptions]; }
+        else {
+            this.selected = this.selected.filter(s => newOptions.includes(s));
+            if (this.selected.length === 0 && newOptions.length > 0) this.selected = [...newOptions];
+        }
+        filters[this.type] = this.selected; this.updateDisplay();
+        if (this.isOpen) this.renderDropdownOptions();
+    }
+    toggle() { this.isOpen = !this.isOpen; if (!this.isOpen) this.searchTerm = ''; this.renderDropdown(); }
+    close() { if (this.isOpen) { this.isOpen = false; this.searchTerm = ''; this.renderDropdown(); } }
+    toggleOption(opt, el) {
+        if (this.selected.includes(opt)) this.selected = this.selected.filter(item => item !== opt);
+        else this.selected.push(opt);
+        if (this.type === 'months') this.selected.sort((a, b) => parseInt(a) - parseInt(b));
+        filters[this.type] = this.selected; this.updateDisplay();
+        const isChecked = this.selected.includes(opt);
+        const box = el.querySelector('.checkbox-box');
+        if (isChecked) { box.classList.remove('border-slate-300'); box.classList.add('bg-blue-600', 'border-blue-600'); box.innerHTML = ICON_CHECK; }
+        else { box.classList.add('border-slate-300'); box.classList.remove('bg-blue-600', 'border-blue-600'); box.innerHTML = ''; }
+        selectedHospital = null; updateFiltersUI(this.type); calculateAndRender();
+    }
+    selectAll(selectAll) {
+        this.selected = selectAll ? [...this.options] : [];
+        filters[this.type] = this.selected; this.updateDisplay(); this.renderDropdownOptions();
+        selectedHospital = null; updateFiltersUI(this.type); calculateAndRender();
+    }
+    updateDisplay() {
+        const textSpan = this.container.querySelector('.ms-text');
+        if (!textSpan) return;
+        if (this.selected.length === this.options.length && this.options.length > 0) textSpan.textContent = this.placeholder;
+        else if (this.selected.length === 0) textSpan.textContent = this.emptyMeansAll ? this.placeholder : '未選擇';
+        else if (this.selected.length === 1) textSpan.textContent = this.selected[0];
+        else if (this.type === 'months') textSpan.textContent = this.selected.length <= 4 ? this.selected.join(', ') : `已選 ${this.selected.length} 個月`;
+        else textSpan.textContent = `已選 ${this.selected.length} 項`;
+    }
+    render() {
+        const labelStyle = this.type === 'months' ? 'text-blue-600' : 'text-slate-600';
+        const bgStyle = this.type === 'months' ? 'bg-blue-50 border-blue-200 text-blue-800' : 'bg-slate-50 border-slate-200 text-slate-700';
+        this.container.innerHTML = `
+            <label class="block text-sm font-medium ${labelStyle} mb-1 flex items-center gap-1">
+                ${this.type === 'months' ? '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>' : ''}
+                ${this.label}
+            </label>
+            <div class="relative ms-wrapper">
+                <div class="w-full border rounded-lg p-2 cursor-pointer flex justify-between items-center focus:ring-2 focus:ring-blue-500 min-h-[42px] ms-btn ${bgStyle}">
+                    <span class="text-sm flex-1 truncate pr-2 ms-text font-medium">${this.placeholder}</span>
+                    ${this.iconSvg}
+                </div>
+                <div class="ms-dropdown-container"></div>
+            </div>`;
+        this.container.querySelector('.ms-btn').addEventListener('click', (e) => { e.stopPropagation(); this.toggle(); });
+    }
+    renderDropdown() {
+        const dropContainer = this.container.querySelector('.ms-dropdown-container');
+        if (!this.isOpen) { dropContainer.innerHTML = ''; return; }
+        dropContainer.innerHTML = `
+            <div class="fixed inset-0 z-40 ms-overlay"></div>
+            <div class="absolute z-50 mt-1 w-full bg-white border border-slate-200 rounded-lg shadow-xl flex flex-col max-h-[350px] overflow-hidden">
+                <div class="p-2 border-b border-slate-100 bg-slate-50 flex flex-col gap-2">
+                    ${this.type !== 'months' ? `<div class="relative"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="absolute left-2.5 top-2.5 text-slate-400"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg><input type="text" class="w-full pl-8 pr-2 py-1.5 text-sm border border-slate-200 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 ms-search" placeholder="搜尋..." value="${this.searchTerm}"></div>` : ''}
+                    <div class="flex justify-between px-1 ${this.type === 'months' ? 'mt-1' : ''}">
+                        <button class="text-xs text-blue-600 hover:text-blue-800 font-medium select-all-btn">全選</button>
+                        <button class="text-xs text-slate-500 hover:text-slate-700 font-medium deselect-all-btn">取消全選</button>
+                    </div>
+                </div>
+                <div class="overflow-y-auto flex-1 p-1 ms-options-list"></div>
+            </div>`;
+        this.renderDropdownOptions();
+        dropContainer.querySelector('.ms-overlay').addEventListener('click', (e) => { e.stopPropagation(); this.close(); });
+        if (this.type !== 'months') {
+            const searchInput = dropContainer.querySelector('.ms-search');
+            searchInput.addEventListener('click', e => e.stopPropagation());
+            searchInput.addEventListener('input', (e) => { this.searchTerm = e.target.value; this.renderDropdownOptions(); });
+        }
+        dropContainer.querySelector('.select-all-btn').addEventListener('click', (e) => { e.stopPropagation(); this.selectAll(true); });
+        dropContainer.querySelector('.deselect-all-btn').addEventListener('click', (e) => { e.stopPropagation(); this.selectAll(false); });
+    }
+    renderDropdownOptions() {
+        const listContainer = this.container.querySelector('.ms-options-list');
+        if (!listContainer) return;
+        const filtered = this.options.filter(opt => opt.toLowerCase().includes(this.searchTerm.toLowerCase()));
+        if (filtered.length === 0) { listContainer.innerHTML = `<div class="px-3 py-4 text-sm text-center text-slate-400">找不到符合的選項</div>`; return; }
+        listContainer.innerHTML = filtered.map(opt => {
+            const isChecked = this.selected.includes(opt);
+            return `<div class="flex items-center px-3 py-2 hover:bg-slate-100 cursor-pointer rounded transition-colors ms-opt" data-val="${opt}">
+                <div class="checkbox-box w-4 h-4 mr-3 border rounded flex flex-shrink-0 items-center justify-center transition-colors ${isChecked ? 'bg-blue-600 border-blue-600' : 'border-slate-300'}">${isChecked ? ICON_CHECK : ''}</div>
+                <span class="text-sm text-slate-700">${opt}</span>
+            </div>`;
+        }).join('');
+        listContainer.querySelectorAll('.ms-opt').forEach(el => {
+            el.addEventListener('click', (e) => { e.stopPropagation(); this.toggleOption(el.getAttribute('data-val'), el); });
+        });
+    }
+}
+
+const monthMultiSelect = new MultiSelect('month-multiselect', '比較基準 (2026年月份複選)', '全部月份 (全年均)', 'months', null, false);
+monthMultiSelect.options = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+monthMultiSelect.selected = filters.months;
+monthMultiSelect.updateDisplay();
+
+const hospMultiSelect = new MultiSelect('hospital-multiselect', '醫院 (可多選)', '全部醫院', 'hospitals', null, true);
+const catMultiSelect = new MultiSelect('category-multiselect', '產品類別 (可多選)', '全部類別', 'categories', null, true);
+const prodMultiSelect = new MultiSelect('product-multiselect', '單一產品 (智慧連動與搜尋)', '全部產品', 'products', null, true);
+
+document.getElementById('rep-filter').addEventListener('change', (e) => {
+    filters.rep = e.target.value; selectedHospital = null; updateFiltersUI('rep'); calculateAndRender();
+});
+
+function updateFiltersUI(changedSource = 'init') {
+    const reps = new Set(), hospitals = new Set(), categories = new Set(), products = new Set();
+    rawData.forEach(row => {
+        if (row.rep) reps.add(row.rep);
+        const matchRep = !filters.rep || row.rep === filters.rep;
+        if (matchRep) { if (row.hospital) hospitals.add(row.hospital); if (row.category) categories.add(row.category); }
+        const matchHosp = filters.hospitals.length === 0 || filters.hospitals.includes(row.hospital);
+        const matchCat = filters.categories.length === 0 || filters.categories.includes(row.category);
+        if (matchRep && matchHosp && matchCat) { if (row.product) products.add(row.product); }
+    });
+    if (changedSource === 'init') {
+        const repSelect = document.getElementById('rep-filter');
+        repSelect.innerHTML = '<option value="">全部業務</option>' + Array.from(reps).sort().map(r => `<option value="${r}">${r}</option>`).join('');
+        repSelect.value = filters.rep;
+    }
+    if (changedSource === 'init' || changedSource === 'rep') {
+        hospMultiSelect.setOptions(Array.from(hospitals).sort(), changedSource === 'init');
+        catMultiSelect.setOptions(Array.from(categories).sort(), changedSource === 'init');
+    }
+    prodMultiSelect.setOptions(Array.from(products).sort(), changedSource === 'init');
+}
+
+function calculateAndRender() {
+    let filteredData = rawData;
+    if (filters.rep) filteredData = filteredData.filter(row => row.rep === filters.rep);
+    if (filters.hospitals.length > 0) filteredData = filteredData.filter(row => filters.hospitals.includes(row.hospital));
+    if (filters.categories.length > 0) filteredData = filteredData.filter(row => filters.categories.includes(row.category));
+    if (filters.products.length > 0) filteredData = filteredData.filter(row => filters.products.includes(row.product));
+
+    const hospitalMap = {};
+    filteredData.forEach(tx => {
+        const { hospital, rep, category, product, month, amount } = tx;
+        if (!hospitalMap[hospital]) hospitalMap[hospital] = { name: hospital, rep, products: {}, months2025: Array(12).fill(0), months2026: Array(12).fill(0) };
+        if (!hospitalMap[hospital].products[product]) hospitalMap[hospital].products[product] = { name: product, category, months2025: Array(12).fill(0), months2026: Array(12).fill(0) };
+        const year = month.substring(0, 4);
+        const mIdx = parseInt(month.substring(4, 6), 10) - 1;
+        if (year === '2025' && mIdx >= 0 && mIdx < 12) { hospitalMap[hospital].months2025[mIdx] += amount; hospitalMap[hospital].products[product].months2025[mIdx] += amount; }
+        else if (year === '2026' && mIdx >= 0 && mIdx < 12) { hospitalMap[hospital].months2026[mIdx] += amount; hospitalMap[hospital].products[product].months2026[mIdx] += amount; }
+    });
+
+    const determineStatus = (g) => g > 5 ? { label: '成長', icon: ICON_UP, color: 'text-green-600' } : g < -5 ? { label: '衰退', icon: ICON_DOWN, color: 'text-red-600' } : { label: '持平', icon: ICON_MINUS, color: 'text-yellow-600' };
+
+    const calculateMetrics = (months2025, months2026) => {
+        const avg2025 = months2025.reduce((a, b) => a + b, 0) / 12;
+        let targetSum = 0;
+        const targetDivisor = filters.months.length || 1;
+        if (filters.months.length > 0) filters.months.forEach(mStr => { targetSum += months2026[parseInt(mStr.replace('月', '')) - 1]; });
+        const avgTarget = filters.months.length > 0 ? (targetSum / targetDivisor) : 0;
+        let targetLabel = filters.months.length === 0 ? '未選月份' : filters.months.length === 12 ? '26年全年均' : filters.months.length <= 4 ? `26年(${filters.months.map(m=>m.replace('月','')).join(',')})月均` : `26年(${filters.months.length}個月)均`;
+        let growthRate = avg2025 === 0 && avgTarget > 0 ? 100 : avg2025 > 0 ? ((avgTarget - avg2025) / avg2025) * 100 : 0;
+        return { avg2025: Math.round(avg2025), avgTarget: Math.round(avgTarget), targetLabel, growthRate: parseFloat(growthRate.toFixed(1)), status: determineStatus(growthRate), totalOverall: (avg2025 * 12) + targetSum };
+    };
+
+    processedData = Object.values(hospitalMap).map(h => {
+        const metrics = calculateMetrics(h.months2025, h.months2026);
+        const productDetails = Object.values(h.products).map(p => ({ ...p, ...calculateMetrics(p.months2025, p.months2026) })).sort((a, b) => b.totalOverall - a.totalOverall);
+        return { ...h, ...metrics, productDetails };
+    }).sort((a, b) => b.totalOverall - a.totalOverall).slice(0, 20);
+
+    let headerText = processedData.length > 0 ? processedData[0].targetLabel : '26年月均';
+    document.getElementById('th-top20-target').textContent = headerText;
+    document.getElementById('th-detail-target').textContent = headerText;
+
+    renderTop20Table();
+    renderRightPanel();
+}
+
+function renderTop20Table() {
+    const tbody = document.getElementById('top20-tbody');
+    if (processedData.length === 0) { tbody.innerHTML = `<tr><td colspan="4" class="text-center py-8 text-slate-500">查無符合條件的資料</td></tr>`; return; }
+    tbody.innerHTML = processedData.map((hospital, idx) => {
+        const isSelected = selectedHospital && selectedHospital.name === hospital.name;
+        return `<tr class="border-b border-slate-50 cursor-pointer transition-colors top20-row ${isSelected ? 'bg-blue-50 border-blue-200' : 'hover:bg-slate-50'}" data-index="${idx}">
+            <td class="px-4 py-3 font-medium text-slate-800"><span class="text-slate-400 mr-2">#${idx + 1}</span>${hospital.name}</td>
+            <td class="px-4 py-3 text-right text-slate-600">${formatMoney(hospital.avg2025)}</td>
+            <td class="px-4 py-3 text-right font-medium text-blue-700">${formatMoney(hospital.avgTarget)}</td>
+            <td class="px-4 py-3"><div class="flex items-center justify-center gap-1 font-semibold ${hospital.status.color}">${hospital.status.icon} ${hospital.growthRate}%</div></td>
+        </tr>`;
+    }).join('');
+    document.querySelectorAll('.top20-row').forEach(row => {
+        row.addEventListener('click', function() { selectedHospital = processedData[this.getAttribute('data-index')]; renderTop20Table(); renderRightPanel(); });
+    });
+}
+
+function renderRightPanel() {
+    const emptyState = document.getElementById('hospital-empty');
+    const detailsState = document.getElementById('hospital-details');
+    if (!selectedHospital) { emptyState.classList.remove('hidden-element'); detailsState.classList.add('hidden-element'); return; }
+    emptyState.classList.add('hidden-element');
+    detailsState.classList.remove('hidden-element');
+    document.getElementById('detail-hosp-name').textContent = selectedHospital.name;
+    document.getElementById('detail-hosp-rep').textContent = `業代碼：${selectedHospital.rep}`;
+    const statusEl = document.getElementById('detail-hosp-status');
+    statusEl.className = `px-4 py-2 rounded-full flex items-center gap-2 font-bold text-lg bg-slate-50 ${selectedHospital.status.color}`;
+    statusEl.innerHTML = `${selectedHospital.status.label}: ${selectedHospital.growthRate}%`;
+    renderDetailTable();
+    renderCharts();
+}
+
+function renderDetailTable() {
+    document.getElementById('detail-products-tbody').innerHTML = selectedHospital.productDetails.map(product => `
+        <tr class="border-b border-slate-50 hover:bg-slate-50">
+            <td class="px-4 py-3 text-slate-500">${product.category}</td>
+            <td class="px-4 py-3 font-medium text-slate-700">${product.name}</td>
+            <td class="px-4 py-3 text-right text-slate-600">${formatMoney(product.avg2025)}</td>
+            <td class="px-4 py-3 text-right font-medium text-blue-700">${formatMoney(product.avgTarget)}</td>
+            <td class="px-4 py-3"><div class="flex items-center justify-center gap-1 font-semibold ${product.status.color}">${product.status.icon} ${product.growthRate}%</div></td>
+        </tr>`).join('');
+}
+
+function calculateTrendLine(data, yKey) {
+    let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0, count = 0;
+    data.forEach((d, i) => { const y = Number(d[yKey]) || 0; sumX += i; sumY += y; sumXY += i * y; sumXX += i * i; count++; });
+    if (count === 0) return data;
+    const slope = (count * sumXY - sumX * sumY) / (count * sumXX - sumX * sumX);
+    const intercept = (sumY - slope * sumX) / count;
+    return data.map((d, i) => ({ ...d, [`${yKey}_trend`]: Math.max(0, slope * i + intercept) }));
+}
+
+function renderCharts() {
+    let endMonth2026 = 12;
+    if (filters.months && filters.months.length > 0) endMonth2026 = Math.max(...filters.months.map(m => parseInt(m.replace('月', ''))));
+    else if (parseInt(latestDataMonth.substring(0, 4)) === 2026) endMonth2026 = parseInt(latestDataMonth.substring(4, 6));
+
+    const chartLabels = [], dataKeys = [];
+    for (let m = 1; m <= 12; m++) { chartLabels.push(`25/${String(m).padStart(2, '0')}`); dataKeys.push({ year: 2025, monthIdx: m - 1 }); }
+    for (let m = 1; m <= endMonth2026; m++) { chartLabels.push(`26/${String(m).padStart(2, '0')}`); dataKeys.push({ year: 2026, monthIdx: m - 1 }); }
+
+    let data = chartLabels.map((label, i) => {
+        const { year, monthIdx } = dataKeys[i];
+        const point = { month: label };
+        point.total = year === 2025 ? selectedHospital.months2025[monthIdx] : selectedHospital.months2026[monthIdx];
+        selectedHospital.productDetails.forEach(p => { point[p.name] = year === 2025 ? p.months2025[monthIdx] : p.months2026[monthIdx]; });
+        return point;
+    });
+    data = calculateTrendLine(data, 'total');
+    selectedHospital.productDetails.forEach(p => { data = calculateTrendLine(data, p.name); });
+
+    Chart.defaults.font.family = "'Inter', 'Helvetica Neue', sans-serif";
+    Chart.defaults.color = '#64748b';
+    const commonOptions = {
+        responsive: true, maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: { tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label}: ${formatMoney(ctx.raw)}` } } },
+        scales: { x: { grid: { display: false } }, y: { grid: { color: '#e2e8f0', borderDash: [3, 3] }, ticks: { callback: (val) => `${val/1000}k` } } }
+    };
+
+    if (totalChartInstance) totalChartInstance.destroy();
+    totalChartInstance = new Chart(document.getElementById('totalChart'), {
+        type: 'line',
+        data: { labels: chartLabels, datasets: [
+            { label: '實際金額', data: data.map(d => d.total), borderColor: '#2563eb', backgroundColor: '#2563eb', tension: 0.3, borderWidth: 3, pointRadius: 4, pointHoverRadius: 6 },
+            { label: '線性趨勢線', data: data.map(d => d.total_trend), borderColor: '#94a3b8', borderDash: [5, 5], tension: 0, borderWidth: 2, pointRadius: 0 }
+        ]},
+        options: commonOptions
+    });
+
+    const colors = ['#f59e0b','#10b981','#ec4899','#8b5cf6','#06b6d4','#f43f5e','#f97316','#14b8a6','#6366f1'];
+    const productDatasets = [];
+    selectedHospital.productDetails.forEach((p, idx) => {
+        const color = colors[idx % colors.length];
+        productDatasets.push({ label: p.name, data: data.map(d => d[p.name]), borderColor: color, backgroundColor: color, tension: 0.3, borderWidth: 2, pointRadius: 3 });
+        productDatasets.push({ label: `${p.name} 趨勢`, data: data.map(d => d[`${p.name}_trend`]), borderColor: color, borderDash: [3, 3], tension: 0, borderWidth: 1, pointRadius: 0, backgroundColor: 'transparent' });
+    });
+
+    if (productChartInstance) productChartInstance.destroy();
+    productChartInstance = new Chart(document.getElementById('productChart'), {
+        type: 'line',
+        data: { labels: chartLabels, datasets: productDatasets },
+        options: { ...commonOptions, plugins: { ...commonOptions.plugins, legend: { position: 'top', labels: { boxWidth: 12, usePointStyle: true, filter: (item) => !item.text.includes('趨勢') } } } }
+    });
+}
+</script>
+</body>
+</html>
