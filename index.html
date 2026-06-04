@@ -15,13 +15,72 @@
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
         .hidden-element { display: none !important; }
         .fade-in { animation: fadeIn 0.3s ease; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity:0; transform:translateY(-8px); } to { opacity:1; transform:translateY(0); } }
+        .spinner { display:inline-block; width:18px; height:18px; border:2px solid rgba(255,255,255,0.4); border-top-color:#fff; border-radius:50%; animation:spin .7s linear infinite; }
+        @keyframes spin { to { transform:rotate(360deg); } }
+        .spinner-dark { border-color:rgba(100,116,139,0.3); border-top-color:#475569; }
     </style>
 </head>
 <body class="min-h-screen bg-slate-100 font-sans text-slate-800">
 
+<!-- ========== JSONBin 初始設定頁 ========== -->
+<div id="setup-page" class="hidden-element min-h-screen flex items-center justify-center p-4">
+    <div class="w-full max-w-lg">
+        <div class="text-center mb-8">
+            <div class="inline-flex items-center justify-center w-16 h-16 bg-violet-600 rounded-2xl shadow-lg mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg>
+            </div>
+            <h1 class="text-2xl font-bold text-slate-800">雲端帳號設定</h1>
+            <p class="text-slate-500 mt-1 text-sm">首次使用，請設定 JSONBin.io 雲端儲存</p>
+        </div>
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 fade-in">
+            <!-- 步驟說明 -->
+            <div class="bg-violet-50 border border-violet-200 rounded-xl p-4 mb-6 text-sm text-violet-800 space-y-2">
+                <p class="font-semibold text-violet-900">📋 設定步驟（約 3 分鐘）</p>
+                <ol class="list-decimal list-inside space-y-1.5 ml-1">
+                    <li>前往 <a href="https://jsonbin.io" target="_blank" class="underline font-medium">jsonbin.io</a> 免費註冊帳號</li>
+                    <li>登入後點右上角頭像 → <b>API Keys</b></li>
+                    <li>點 <b>+ ADD API KEY</b>，複製產生的 <b>Secret Key</b>（以 <code class="bg-violet-100 px-1 rounded">$2b$</code> 開頭）</li>
+                    <li>貼到下方欄位，按「初始化雲端空間」</li>
+                </ol>
+                <p class="text-xs text-violet-600 mt-2">✅ 免費方案每月 10,000 次請求，一般使用完全足夠。</p>
+            </div>
+
+            <div id="setup-error" class="hidden-element mb-4 p-3 bg-red-50 text-red-600 border border-red-200 rounded-lg text-sm"></div>
+
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1">JSONBin Secret Key <span class="text-red-400">*</span></label>
+                    <input id="setup-apikey" type="password" placeholder="$2b$10$xxxxxxxxxxxxxxxxxxxxxxxx..." class="w-full border border-slate-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm font-mono" />
+                    <p class="text-xs text-slate-400 mt-1">此 Key 只會儲存在您的瀏覽器本機，不會傳給第三方。</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1">管理員密碼設定 <span class="text-red-400">*</span></label>
+                    <input id="setup-adminpwd" type="password" placeholder="請設定 admin 帳號的密碼（至少 6 字元）" class="w-full border border-slate-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm" />
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1">確認管理員密碼 <span class="text-red-400">*</span></label>
+                    <input id="setup-adminpwd2" type="password" placeholder="再次輸入密碼" class="w-full border border-slate-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm" />
+                </div>
+                <button id="setup-btn" onclick="doSetup()" class="w-full bg-violet-600 hover:bg-violet-700 text-white py-2.5 rounded-lg font-medium transition-colors text-sm flex items-center justify-center gap-2">
+                    初始化雲端空間
+                </button>
+            </div>
+
+            <div class="mt-5 pt-5 border-t border-slate-100">
+                <p class="text-xs text-slate-400 text-center">已有設定？若您曾在其他電腦設定過，請輸入相同的 API Key 並點下方連結。</p>
+                <div class="mt-2">
+                    <label class="block text-sm font-medium text-slate-600 mb-1">已有 Bin ID（選填）</label>
+                    <input id="setup-existingbinid" type="text" placeholder="貼上已有的 Users Bin ID（格式：6位英數字）" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-violet-500" />
+                    <p class="text-xs text-slate-400 mt-1">填寫後按「初始化雲端空間」即可連接到現有資料。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- ========== 登入頁面 ========== -->
-<div id="auth-page" class="min-h-screen flex items-center justify-center p-4">
+<div id="auth-page" class="hidden-element min-h-screen flex items-center justify-center p-4">
     <div class="w-full max-w-md">
         <div class="text-center mb-8">
             <div class="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-2xl shadow-lg mb-4">
@@ -44,12 +103,15 @@
                     <label class="block text-sm font-medium text-slate-600 mb-1">密碼</label>
                     <input id="login-password" type="password" placeholder="請輸入密碼" class="w-full border border-slate-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" />
                 </div>
-                <button onclick="doLogin()" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-lg font-medium transition-colors text-sm">登入</button>
+                <button id="login-btn" onclick="doLogin()" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-lg font-medium transition-colors text-sm flex items-center justify-center gap-2">
+                    登入
+                </button>
             </div>
             <div class="mt-6 pt-6 border-t border-slate-100 text-center">
                 <p class="text-sm text-slate-500">尚無帳號？
                     <button onclick="showPanel('register')" class="text-blue-600 hover:underline font-medium">申請帳號</button>
                 </p>
+                <button onclick="showSetupPage()" class="text-xs text-slate-400 hover:text-slate-600 mt-3 block mx-auto">⚙️ 更換雲端設定</button>
             </div>
         </div>
 
@@ -78,7 +140,9 @@
                     <label class="block text-sm font-medium text-slate-600 mb-1">申請說明 (選填)</label>
                     <input id="reg-note" type="text" placeholder="說明您的職務或申請用途" class="w-full border border-slate-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" />
                 </div>
-                <button onclick="doRegister()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-lg font-medium transition-colors text-sm">送出申請</button>
+                <button id="register-btn" onclick="doRegister()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-lg font-medium transition-colors text-sm flex items-center justify-center gap-2">
+                    送出申請
+                </button>
             </div>
             <div class="mt-6 pt-6 border-t border-slate-100 text-center">
                 <button onclick="showPanel('login')" class="text-sm text-blue-600 hover:underline font-medium">← 返回登入</button>
@@ -91,28 +155,30 @@
                 <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
             </div>
             <h2 class="text-lg font-semibold text-slate-700 mb-2">申請已送出，等待審核</h2>
-            <p class="text-sm text-slate-500 mb-6">您的帳號申請已收到，請等待管理員審核通過後再登入。</p>
+            <p class="text-sm text-slate-500 mb-6">您的帳號申請已儲存至雲端，請等待管理員審核通過後再登入。</p>
             <button onclick="showPanel('login')" class="text-sm text-blue-600 hover:underline font-medium">← 返回登入</button>
         </div>
     </div>
 </div>
 
+<!-- 全頁載入遮罩 -->
+<div id="loading-overlay" class="hidden-element fixed inset-0 bg-white/80 z-[200] flex flex-col items-center justify-center gap-4">
+    <div class="w-10 h-10 border-4 border-blue-200 border-t-blue-600 rounded-full" style="animation:spin .7s linear infinite"></div>
+    <p id="loading-msg" class="text-slate-600 text-sm font-medium">連線中...</p>
+</div>
+
 <!-- ========== 主程式頁面 ========== -->
 <div id="app-page" class="hidden-element min-h-screen bg-slate-50 p-6">
 
-    <!-- 頂部 Header -->
     <div class="max-w-7xl mx-auto mb-8 bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex justify-between items-center flex-wrap gap-3">
-        <div class="flex items-center gap-4">
-            <div>
-                <h1 class="text-2xl font-bold text-slate-800 flex items-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-600"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
-                    前20大醫院業績成長分析
-                </h1>
-                <p class="text-slate-500 text-sm mt-0.5">登入者：<span id="current-user-display" class="font-medium text-blue-600"></span></p>
-            </div>
+        <div>
+            <h1 class="text-2xl font-bold text-slate-800 flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-600"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+                前20大醫院業績成長分析
+            </h1>
+            <p class="text-slate-500 text-sm mt-0.5">登入者：<span id="current-user-display" class="font-medium text-blue-600"></span></p>
         </div>
         <div class="flex items-center gap-2">
-            <!-- 管理員按鈕（僅 admin 可見） -->
             <button id="admin-btn" onclick="showAdminModal()" class="hidden-element bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-lg font-medium text-sm transition-colors flex items-center gap-2">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
                 管理帳號
@@ -130,24 +196,18 @@
         </div>
     </div>
 
-    <!-- 錯誤訊息區 -->
     <div id="error-container" class="max-w-7xl mx-auto mb-6 p-4 bg-red-50 text-red-700 border border-red-200 rounded-lg items-center gap-2 hidden-element flex">
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
         <span id="error-message"></span>
     </div>
 
-    <!-- 初始等待畫面 -->
     <div id="empty-state" class="max-w-7xl mx-auto bg-white rounded-2xl shadow-sm border border-slate-100 py-20 flex flex-col items-center justify-center text-slate-500">
         <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mb-4 text-blue-200"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
         <p class="text-xl font-medium text-slate-700 mb-2">等待載入資料</p>
-        <p>請點擊右上角按鈕上傳「出貨明細」或「DATA」CSV 或 Excel 檔案以啟動戰情室。</p>
-        <p class="text-sm mt-4 text-slate-400">系統將自動計算成長率，並支援切換比較基準月份。</p>
+        <p>請點擊右上角按鈕上傳「出貨明細」CSV 或 Excel 檔案。</p>
     </div>
 
-    <!-- 主要內容區 -->
     <div id="main-content" class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 hidden-element">
-
-        <!-- 左側：篩選器與 Top 20 列表 -->
         <div class="lg:col-span-5 space-y-6">
             <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 relative z-30">
                 <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
@@ -159,21 +219,16 @@
                     <hr class="border-slate-100 my-2">
                     <div>
                         <label class="block text-sm font-medium text-slate-600 mb-1">業務代號</label>
-                        <select id="rep-filter" class="w-full border border-slate-200 rounded-lg p-2 bg-slate-50 focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm">
-                            <option value="">全部業務</option>
-                        </select>
+                        <select id="rep-filter" class="w-full border border-slate-200 rounded-lg p-2 bg-slate-50 focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm"><option value="">全部業務</option></select>
                     </div>
                     <div id="hospital-multiselect"></div>
                     <div id="category-multiselect"></div>
                     <div id="product-multiselect"></div>
                 </div>
             </div>
-
             <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden relative z-10">
-                <div class="p-5 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
-                    <h2 class="text-lg font-semibold flex items-center gap-2">
-                        Top 20 醫院總表 <span class="text-sm font-normal text-slate-500 ml-2">(點擊查看明細)</span>
-                    </h2>
+                <div class="p-5 border-b border-slate-100 bg-slate-50">
+                    <h2 class="text-lg font-semibold flex items-center gap-2">Top 20 醫院總表 <span class="text-sm font-normal text-slate-500 ml-2">(點擊查看明細)</span></h2>
                 </div>
                 <div class="overflow-x-auto max-h-[500px] overflow-y-auto">
                     <table class="w-full text-sm text-left">
@@ -190,15 +245,11 @@
                 </div>
             </div>
         </div>
-
-        <!-- 右側：醫院明細與圖表 -->
         <div class="lg:col-span-7 space-y-6 relative z-10">
             <div id="hospital-empty" class="bg-white rounded-2xl shadow-sm border border-slate-100 h-full min-h-[500px] flex flex-col items-center justify-center text-slate-400">
                 <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mb-4 text-slate-200"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                 <p class="text-lg font-medium text-slate-500">請從左側點選一間醫院</p>
-                <p class="text-sm mt-2">即可檢視該醫院的單品明細、總金額趨勢線及各產品曲線圖。</p>
             </div>
-
             <div id="hospital-details" class="hidden-element space-y-6">
                 <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
                     <div class="flex justify-between items-start mb-6">
@@ -210,17 +261,11 @@
                     </div>
                     <div class="space-y-8">
                         <div>
-                            <h3 class="text-md font-semibold text-slate-700 mb-4 flex items-center gap-2">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
-                                總體金額趨勢
-                            </h3>
+                            <h3 class="text-md font-semibold text-slate-700 mb-4">總體金額趨勢</h3>
                             <div class="h-64 w-full relative"><canvas id="totalChart"></canvas></div>
                         </div>
                         <div>
-                            <h3 class="text-md font-semibold text-slate-700 mb-4 flex items-center gap-2">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="16 6 23 6 23 13"></polyline></svg>
-                                產品別金額趨勢
-                            </h3>
+                            <h3 class="text-md font-semibold text-slate-700 mb-4">產品別金額趨勢</h3>
                             <div class="h-80 w-full relative"><canvas id="productChart"></canvas></div>
                         </div>
                     </div>
@@ -253,55 +298,31 @@
 <div id="admin-modal" class="hidden-element fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
         <div class="p-6 border-b border-slate-100 flex justify-between items-center">
-            <h2 class="text-lg font-bold flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle></svg>
-                帳號管理後台
-            </h2>
+            <h2 class="text-lg font-bold flex items-center gap-2">帳號管理後台</h2>
             <button onclick="closeAdminModal()" class="text-slate-400 hover:text-slate-700 text-2xl leading-none">&times;</button>
         </div>
-
-        <!-- Tab -->
         <div class="flex border-b border-slate-100">
-            <button onclick="switchAdminTab('pending')" id="tab-pending" class="admin-tab px-6 py-3 text-sm font-medium border-b-2 border-blue-600 text-blue-600">待審核申請 <span id="admin-pending-count" class="bg-red-500 text-white text-xs rounded-full px-1.5 ml-1"></span></button>
+            <button onclick="switchAdminTab('pending')" id="tab-pending" class="admin-tab px-6 py-3 text-sm font-medium border-b-2 border-blue-600 text-blue-600">
+                待審核 <span id="admin-pending-count" class="bg-red-500 text-white text-xs rounded-full px-1.5 ml-1"></span>
+            </button>
             <button onclick="switchAdminTab('users')" id="tab-users" class="admin-tab px-6 py-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700">帳號列表</button>
             <button onclick="switchAdminTab('add')" id="tab-add" class="admin-tab px-6 py-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700">新增帳號</button>
         </div>
-
         <div class="overflow-y-auto flex-1 p-6">
-            <!-- 待審核 -->
-            <div id="admin-tab-pending">
-                <div id="pending-list"></div>
-            </div>
-
-            <!-- 帳號列表 -->
-            <div id="admin-tab-users" class="hidden-element">
-                <div id="users-list"></div>
-            </div>
-
-            <!-- 新增帳號 -->
+            <div id="admin-tab-pending"><div id="pending-list"></div></div>
+            <div id="admin-tab-users" class="hidden-element"><div id="users-list"></div></div>
             <div id="admin-tab-add" class="hidden-element">
                 <div id="add-user-msg" class="hidden-element mb-4 p-3 rounded-lg text-sm"></div>
                 <div class="space-y-4 max-w-sm">
-                    <div>
-                        <label class="block text-sm font-medium text-slate-600 mb-1">帳號</label>
-                        <input id="add-username" type="text" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="英數字 4~20 字元" />
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-slate-600 mb-1">姓名</label>
-                        <input id="add-displayname" type="text" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="顯示名稱" />
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-slate-600 mb-1">密碼</label>
-                        <input id="add-password" type="password" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="至少 6 字元" />
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-slate-600 mb-1">角色</label>
+                    <div><label class="block text-sm font-medium text-slate-600 mb-1">帳號</label><input id="add-username" type="text" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="英數字 4~20 字元" /></div>
+                    <div><label class="block text-sm font-medium text-slate-600 mb-1">姓名</label><input id="add-displayname" type="text" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="顯示名稱" /></div>
+                    <div><label class="block text-sm font-medium text-slate-600 mb-1">密碼</label><input id="add-password" type="password" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="至少 6 字元" /></div>
+                    <div><label class="block text-sm font-medium text-slate-600 mb-1">角色</label>
                         <select id="add-role" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            <option value="user">一般用戶</option>
-                            <option value="admin">管理員</option>
+                            <option value="user">一般用戶</option><option value="admin">管理員</option>
                         </select>
                     </div>
-                    <button onclick="adminAddUser()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg text-sm font-medium transition-colors">新增帳號</button>
+                    <button id="add-user-btn" onclick="adminAddUser()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2">新增帳號</button>
                 </div>
             </div>
         </div>
@@ -310,117 +331,166 @@
 
 <script>
 // ============================================================
-//  帳號系統 (localStorage + 記憶體備援)
+//  JSONBin 雲端帳號系統
 // ============================================================
-const USERS_KEY = 'biz_users_v2';
-const PENDING_KEY = 'biz_pending_v2';
-const SESSION_KEY = 'biz_session_v2';
+const JSONBIN_BASE = 'https://api.jsonbin.io/v3';
+const CFG_KEY = 'biz_cloud_cfg';   // localStorage 只存設定（API Key + Bin IDs）
+const SESSION_KEY = 'biz_session'; // sessionStorage 存登入狀態
 
-// ---- localStorage 可用性檢測 ----
-let _lsAvailable = false;
-try {
-    localStorage.setItem('__ls_test__', '1');
-    if (localStorage.getItem('__ls_test__') === '1') { _lsAvailable = true; }
-    localStorage.removeItem('__ls_test__');
-} catch(e) { _lsAvailable = false; }
-
-// 記憶體備援（頁面關閉後消失，但至少本次 session 可用）
-let _memUsers = null;
-let _memPending = null;
-
-if (!_lsAvailable) {
-    console.warn('[Auth] localStorage 不可用，使用記憶體模式（重新整理後資料將消失）');
-    setTimeout(() => {
-        const banner = document.createElement('div');
-        banner.style.cssText = 'position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#f59e0b;color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;z-index:9999;box-shadow:0 2px 8px rgba(0,0,0,0.2)';
-        banner.textContent = '⚠️ 瀏覽器限制 localStorage，帳號資料僅保存至本次關閉視窗前。';
-        document.body.appendChild(banner);
-        setTimeout(() => banner.remove(), 8000);
-    }, 500);
+// ---- 設定管理 ----
+function getCfg() {
+    try { const r = localStorage.getItem(CFG_KEY); return r ? JSON.parse(r) : null; } catch(e) { return null; }
+}
+function saveCfg(cfg) {
+    try { localStorage.setItem(CFG_KEY, JSON.stringify(cfg)); } catch(e) {}
 }
 
-// ---- 密碼雜湊（純字串操作，跨瀏覽器一致） ----
-function hashSimple(str) {
-    // djb2 with safe arithmetic: keep accumulator as string-XOR to avoid float precision
-    let hash = 5381;
-    for (let i = 0; i < str.length; i++) {
-        // Use |0 after each step to clamp to Int32, avoiding float drift
-        hash = (((hash << 5) + hash) | 0) ^ str.charCodeAt(i);
-    }
-    // Convert to unsigned hex
-    return (hash >>> 0).toString(16).padStart(8, '0');
+// ---- 密碼雜湊 ----
+function hashPwd(str) {
+    let h = 5381;
+    for (let i = 0; i < str.length; i++) h = (((h << 5) + h) | 0) ^ str.charCodeAt(i);
+    return (h >>> 0).toString(16).padStart(8, '0');
 }
 
-// ---- Storage helpers ----
-function getUsers() {
-    if (!_lsAvailable) return _memUsers ? JSON.parse(JSON.stringify(_memUsers)) : [];
-    try {
-        const raw = localStorage.getItem(USERS_KEY);
-        return raw ? JSON.parse(raw) : [];
-    } catch(e) { return []; }
-}
-function saveUsers(users) {
-    if (!_lsAvailable) { _memUsers = JSON.parse(JSON.stringify(users)); return; }
-    try {
-        localStorage.setItem(USERS_KEY, JSON.stringify(users));
-        // 驗證是否真的寫入
-        const verify = localStorage.getItem(USERS_KEY);
-        if (!verify) throw new Error('write verify failed');
-    } catch(e) {
-        console.error('[Auth] saveUsers 失敗：', e);
-        _memUsers = JSON.parse(JSON.stringify(users)); // 降級記憶體
-        alert('⚠️ 帳號儲存失敗（' + e.message + '）\n資料已暫存於記憶體，重新整理後將消失。');
-    }
+// ---- JSONBin API helpers ----
+async function binRead(binId, apiKey) {
+    const res = await fetch(`${JSONBIN_BASE}/b/${binId}/latest`, {
+        headers: { 'X-Master-Key': apiKey }
+    });
+    if (!res.ok) throw new Error(`讀取失敗 (${res.status})`);
+    const j = await res.json();
+    return j.record;
 }
 
-function getPending() {
-    if (!_lsAvailable) return _memPending ? JSON.parse(JSON.stringify(_memPending)) : [];
-    try {
-        const raw = localStorage.getItem(PENDING_KEY);
-        return raw ? JSON.parse(raw) : [];
-    } catch(e) { return []; }
-}
-function savePending(p) {
-    if (!_lsAvailable) { _memPending = JSON.parse(JSON.stringify(p)); return; }
-    try {
-        localStorage.setItem(PENDING_KEY, JSON.stringify(p));
-    } catch(e) {
-        console.error('[Auth] savePending 失敗：', e);
-        _memPending = JSON.parse(JSON.stringify(p));
-    }
+async function binWrite(binId, apiKey, data) {
+    const res = await fetch(`${JSONBIN_BASE}/b/${binId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'X-Master-Key': apiKey },
+        body: JSON.stringify(data)
+    });
+    if (!res.ok) throw new Error(`寫入失敗 (${res.status})`);
+    return await res.json();
 }
 
+async function binCreate(apiKey, name, data) {
+    const res = await fetch(`${JSONBIN_BASE}/b`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Master-Key': apiKey, 'X-Bin-Name': name, 'X-Bin-Private': 'true' },
+        body: JSON.stringify(data)
+    });
+    if (!res.ok) throw new Error(`建立 Bin 失敗 (${res.status})`);
+    const j = await res.json();
+    return j.metadata.id;
+}
+
+// ---- 高階 CRUD ----
+async function getUsers() {
+    const cfg = getCfg();
+    const data = await binRead(cfg.usersBinId, cfg.apiKey);
+    return data.users || [];
+}
+async function saveUsers(users) {
+    const cfg = getCfg();
+    await binWrite(cfg.usersBinId, cfg.apiKey, { users });
+}
+async function getPending() {
+    const cfg = getCfg();
+    const data = await binRead(cfg.pendingBinId, cfg.apiKey);
+    return data.pending || [];
+}
+async function savePending(pending) {
+    const cfg = getCfg();
+    await binWrite(cfg.pendingBinId, cfg.apiKey, { pending });
+}
+
+// ---- Session ----
 function getSession() {
-    try {
-        const raw = sessionStorage.getItem(SESSION_KEY);
-        return raw ? JSON.parse(raw) : null;
-    } catch(e) { return null; }
+    try { const r = sessionStorage.getItem(SESSION_KEY); return r ? JSON.parse(r) : null; } catch(e) { return null; }
 }
-function saveSession(user) {
-    try { sessionStorage.setItem(SESSION_KEY, JSON.stringify(user)); } catch(e) {}
+function saveSession(u) { try { sessionStorage.setItem(SESSION_KEY, JSON.stringify(u)); } catch(e) {} }
+function clearSession() { try { sessionStorage.removeItem(SESSION_KEY); } catch(e) {} }
+
+// ---- Loading overlay ----
+function showLoading(msg = '連線中...') {
+    document.getElementById('loading-msg').textContent = msg;
+    document.getElementById('loading-overlay').classList.remove('hidden-element');
 }
-function clearSession() {
-    try { sessionStorage.removeItem(SESSION_KEY); } catch(e) {}
+function hideLoading() { document.getElementById('loading-overlay').classList.add('hidden-element'); }
+
+function setBtn(id, loading, text) {
+    const btn = document.getElementById(id);
+    if (!btn) return;
+    if (loading) {
+        btn.disabled = true;
+        btn.innerHTML = `<span class="spinner"></span> ${text}`;
+    } else {
+        btn.disabled = false;
+        btn.innerHTML = text;
+    }
 }
 
-// 初始化：確保 admin 帳號存在，並修正舊版 hash 不相容問題
-const HASH_VERSION = 'v2'; // 每次改 hashSimple 就升版號
-function ensureAdmin() {
-    let users = getUsers();
-    const adminUser = users.find(u => u.username === 'admin');
-    const adminHash = hashSimple('Admin@2026');
-    if (!adminUser) {
-        // 全新環境：建立 admin
-        users.push({ username: 'admin', displayName: '系統管理員', password: adminHash, hashVer: HASH_VERSION, role: 'admin', active: true, createdAt: new Date().toISOString() });
-        saveUsers(users);
-    } else if (adminUser.hashVer !== HASH_VERSION) {
-        // Hash 函式改版：重設 admin 密碼 hash（其他帳號密碼需重設）
-        adminUser.password = adminHash;
-        adminUser.hashVer = HASH_VERSION;
-        // 其他帳號標記需重設密碼（因舊 hash 無法驗證）
-        users.forEach(u => { if (u.username !== 'admin' && u.hashVer !== HASH_VERSION) u.needsReset = true; });
-        saveUsers(users);
-        console.warn('[Auth] Hash 版本升級，非 admin 帳號需重設密碼');
+// ============================================================
+//  初始設定頁
+// ============================================================
+function showSetupPage() {
+    ['auth-page','app-page'].forEach(id => document.getElementById(id).classList.add('hidden-element'));
+    document.getElementById('setup-page').classList.remove('hidden-element');
+}
+
+async function doSetup() {
+    const apiKey = document.getElementById('setup-apikey').value.trim();
+    const adminPwd = document.getElementById('setup-adminpwd').value;
+    const adminPwd2 = document.getElementById('setup-adminpwd2').value;
+    const existingBinId = document.getElementById('setup-existingbinid').value.trim();
+    const errEl = document.getElementById('setup-error');
+    errEl.classList.add('hidden-element');
+
+    if (!apiKey) { errEl.textContent = '請輸入 JSONBin API Key'; errEl.classList.remove('hidden-element'); return; }
+
+    if (existingBinId) {
+        // 連線到已有的 Bin
+        setBtn('setup-btn', true, '連線中...');
+        try {
+            // 嘗試讀取現有 users bin
+            const data = await binRead(existingBinId, apiKey);
+            // 找 pending bin（假設同一個 apiKey 下，pending bin id 存在 users bin 的 meta 裡）
+            const pendingBinId = data._pendingBinId;
+            if (!pendingBinId) throw new Error('找不到對應的 Pending Bin ID，請確認 Bin ID 正確。');
+            saveCfg({ apiKey, usersBinId: existingBinId, pendingBinId });
+            setBtn('setup-btn', false, '初始化雲端空間');
+            startApp();
+        } catch(e) {
+            errEl.textContent = '連線失敗：' + e.message;
+            errEl.classList.remove('hidden-element');
+            setBtn('setup-btn', false, '初始化雲端空間');
+        }
+        return;
+    }
+
+    // 全新設定
+    if (!adminPwd) { errEl.textContent = '請設定管理員密碼'; errEl.classList.remove('hidden-element'); return; }
+    if (adminPwd.length < 6) { errEl.textContent = '管理員密碼至少 6 字元'; errEl.classList.remove('hidden-element'); return; }
+    if (adminPwd !== adminPwd2) { errEl.textContent = '兩次密碼不一致'; errEl.classList.remove('hidden-element'); return; }
+
+    setBtn('setup-btn', true, '建立雲端空間中...');
+    try {
+        // 建立 pending bin 先
+        const pendingBinId = await binCreate(apiKey, 'biz-pending', { pending: [] });
+        // 建立 users bin（並把 pendingBinId 存在 meta 欄位供跨裝置取得）
+        const adminUser = { username: 'admin', displayName: '系統管理員', password: hashPwd(adminPwd), role: 'admin', active: true, createdAt: new Date().toISOString() };
+        const usersBinId = await binCreate(apiKey, 'biz-users', { _pendingBinId: pendingBinId, users: [adminUser] });
+
+        saveCfg({ apiKey, usersBinId, pendingBinId });
+        setBtn('setup-btn', false, '初始化雲端空間');
+
+        // 顯示 Bin ID 給用戶記錄
+        alert(`✅ 雲端空間建立成功！\n\n請記下以下資訊（供其他設備使用）：\n\nUsers Bin ID：${usersBinId}\n\n其他設備輸入相同 API Key + 此 Bin ID 即可連線。`);
+
+        startApp();
+    } catch(e) {
+        errEl.textContent = '建立失敗：' + e.message + '（請確認 API Key 正確）';
+        errEl.classList.remove('hidden-element');
+        setBtn('setup-btn', false, '初始化雲端空間');
     }
 }
 
@@ -428,9 +498,7 @@ function ensureAdmin() {
 //  Auth UI
 // ============================================================
 function showPanel(name) {
-    ['login-panel', 'register-panel', 'pending-panel'].forEach(id => {
-        document.getElementById(id).classList.add('hidden-element');
-    });
+    ['login-panel','register-panel','pending-panel'].forEach(id => document.getElementById(id).classList.add('hidden-element'));
     document.getElementById(name + '-panel').classList.remove('hidden-element');
 }
 
@@ -441,42 +509,37 @@ function setMsg(elId, msg, isError = true) {
     el.className = `mb-4 p-3 rounded-lg text-sm ${isError ? 'bg-red-50 text-red-600 border border-red-200' : 'bg-green-50 text-green-700 border border-green-200'}`;
 }
 
-function doLogin() {
+async function doLogin() {
     const username = document.getElementById('login-username').value.trim();
     const password = document.getElementById('login-password').value;
     const errEl = document.getElementById('login-error');
-
-    if (!username || !password) {
-        errEl.textContent = '請填寫帳號與密碼'; errEl.classList.remove('hidden-element'); return;
-    }
-
-    const users = getUsers();
-    const user = users.find(u => u.username === username);
-
-    if (!user) {
-        errEl.textContent = '帳號不存在'; errEl.classList.remove('hidden-element'); return;
-    }
-    if (!user.active) {
-        errEl.textContent = '帳號尚未啟用或已被停用，請聯絡管理員'; errEl.classList.remove('hidden-element'); return;
-    }
-    if (user.needsReset) {
-        errEl.textContent = '系統升級，請聯絡管理員重設您的密碼'; errEl.classList.remove('hidden-element'); return;
-    }
-    if (user.password !== hashSimple(password)) {
-        errEl.textContent = '密碼錯誤'; errEl.classList.remove('hidden-element'); return;
-    }
-
     errEl.classList.add('hidden-element');
-    saveSession({ username: user.username, displayName: user.displayName, role: user.role });
-    enterApp(user);
+
+    if (!username || !password) { errEl.textContent = '請填寫帳號與密碼'; errEl.classList.remove('hidden-element'); return; }
+
+    setBtn('login-btn', true, '驗證中...');
+    try {
+        const users = await getUsers();
+        const user = users.find(u => u.username === username);
+        if (!user) { errEl.textContent = '帳號不存在'; errEl.classList.remove('hidden-element'); return; }
+        if (!user.active) { errEl.textContent = '帳號尚未啟用或已被停用，請聯絡管理員'; errEl.classList.remove('hidden-element'); return; }
+        if (user.password !== hashPwd(password)) { errEl.textContent = '密碼錯誤'; errEl.classList.remove('hidden-element'); return; }
+
+        saveSession({ username: user.username, displayName: user.displayName, role: user.role });
+        enterApp(user);
+    } catch(e) {
+        errEl.textContent = '雲端連線失敗：' + e.message;
+        errEl.classList.remove('hidden-element');
+    } finally {
+        setBtn('login-btn', false, '登入');
+    }
 }
 
-// Enter on input
 ['login-username','login-password'].forEach(id => {
     document.getElementById(id).addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
 });
 
-function doRegister() {
+async function doRegister() {
     const username = document.getElementById('reg-username').value.trim();
     const displayName = document.getElementById('reg-displayname').value.trim();
     const password = document.getElementById('reg-password').value;
@@ -488,16 +551,20 @@ function doRegister() {
     if (password.length < 6) { setMsg('register-msg', '密碼至少需要 6 個字元'); return; }
     if (password !== password2) { setMsg('register-msg', '兩次密碼輸入不一致'); return; }
 
-    const users = getUsers();
-    if (users.find(u => u.username === username)) { setMsg('register-msg', '此帳號名稱已被使用，請更換'); return; }
+    setBtn('register-btn', true, '送出中...');
+    try {
+        const [users, pending] = await Promise.all([getUsers(), getPending()]);
+        if (users.find(u => u.username === username)) { setMsg('register-msg', '此帳號名稱已被使用，請更換'); return; }
+        if (pending.find(p => p.username === username)) { setMsg('register-msg', '此帳號已有待審核的申請'); return; }
 
-    const pending = getPending();
-    if (pending.find(p => p.username === username)) { setMsg('register-msg', '此帳號已有待審核的申請'); return; }
-
-    pending.push({ username, displayName, password: hashSimple(password), note, requestedAt: new Date().toISOString() });
-    savePending(pending);
-
-    showPanel('pending');
+        pending.push({ username, displayName, password: hashPwd(password), note, requestedAt: new Date().toISOString() });
+        await savePending(pending);
+        showPanel('pending');
+    } catch(e) {
+        setMsg('register-msg', '雲端連線失敗：' + e.message);
+    } finally {
+        setBtn('register-btn', false, '送出申請');
+    }
 }
 
 function doLogout() {
@@ -508,140 +575,145 @@ function doLogout() {
 }
 
 function enterApp(user) {
+    document.getElementById('setup-page').classList.add('hidden-element');
     document.getElementById('auth-page').classList.add('hidden-element');
     document.getElementById('app-page').classList.remove('hidden-element');
     document.getElementById('current-user-display').textContent = `${user.displayName} (${user.username})`;
-
     if (user.role === 'admin') {
         document.getElementById('admin-btn').classList.remove('hidden-element');
         updatePendingBadge();
     }
 }
 
-function updatePendingBadge() {
-    const count = getPending().length;
-    const badge = document.getElementById('pending-badge');
-    const adminCount = document.getElementById('admin-pending-count');
-    if (count > 0) {
-        badge.textContent = count; badge.classList.remove('hidden-element');
-        if (adminCount) { adminCount.textContent = count; }
-    } else {
-        badge.classList.add('hidden-element');
-        if (adminCount) adminCount.textContent = '';
-    }
+async function updatePendingBadge() {
+    try {
+        const pending = await getPending();
+        const count = pending.length;
+        const badge = document.getElementById('pending-badge');
+        const adminCount = document.getElementById('admin-pending-count');
+        if (count > 0) { badge.textContent = count; badge.classList.remove('hidden-element'); if (adminCount) adminCount.textContent = count; }
+        else { badge.classList.add('hidden-element'); if (adminCount) adminCount.textContent = ''; }
+    } catch(e) {}
 }
 
 // ============================================================
 //  Admin Modal
 // ============================================================
-function showAdminModal() {
-    document.getElementById('admin-modal').classList.remove('hidden-element');
-    switchAdminTab('pending');
-}
-function closeAdminModal() {
-    document.getElementById('admin-modal').classList.add('hidden-element');
-}
+function showAdminModal() { document.getElementById('admin-modal').classList.remove('hidden-element'); switchAdminTab('pending'); }
+function closeAdminModal() { document.getElementById('admin-modal').classList.add('hidden-element'); }
 
 function switchAdminTab(tab) {
-    ['pending', 'users', 'add'].forEach(t => {
+    ['pending','users','add'].forEach(t => {
         document.getElementById('admin-tab-' + t).classList.add('hidden-element');
         const btn = document.getElementById('tab-' + t);
-        btn.classList.remove('border-blue-600', 'text-blue-600');
-        btn.classList.add('border-transparent', 'text-slate-500');
+        btn.classList.remove('border-blue-600','text-blue-600');
+        btn.classList.add('border-transparent','text-slate-500');
     });
     document.getElementById('admin-tab-' + tab).classList.remove('hidden-element');
     const active = document.getElementById('tab-' + tab);
-    active.classList.add('border-blue-600', 'text-blue-600');
-    active.classList.remove('border-transparent', 'text-slate-500');
-
+    active.classList.add('border-blue-600','text-blue-600');
+    active.classList.remove('border-transparent','text-slate-500');
     if (tab === 'pending') renderPendingList();
     if (tab === 'users') renderUsersList();
 }
 
-function renderPendingList() {
-    const pending = getPending();
+async function renderPendingList() {
     const el = document.getElementById('pending-list');
-    const countEl = document.getElementById('admin-pending-count');
-    if (countEl) countEl.textContent = pending.length > 0 ? pending.length : '';
-
-    if (pending.length === 0) {
-        el.innerHTML = '<div class="text-center py-12 text-slate-400">目前沒有待審核的申請</div>'; return;
-    }
-    el.innerHTML = pending.map((p, i) => `
-        <div class="flex items-start justify-between p-4 border border-slate-200 rounded-xl mb-3 bg-slate-50">
-            <div>
-                <p class="font-semibold text-slate-800">${p.displayName} <span class="text-slate-400 font-normal text-sm">@${p.username}</span></p>
-                ${p.note ? `<p class="text-sm text-slate-500 mt-1">說明：${p.note}</p>` : ''}
-                <p class="text-xs text-slate-400 mt-1">申請時間：${new Date(p.requestedAt).toLocaleString('zh-TW')}</p>
-            </div>
-            <div class="flex gap-2 ml-4 flex-shrink-0">
-                <button onclick="approvePending(${i})" class="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition-colors">核准</button>
-                <button onclick="rejectPending(${i})" class="bg-red-100 hover:bg-red-200 text-red-600 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors">拒絕</button>
-            </div>
-        </div>
-    `).join('');
+    el.innerHTML = '<div class="text-center py-8 text-slate-400"><span class="spinner spinner-dark"></span></div>';
+    try {
+        const pending = await getPending();
+        const countEl = document.getElementById('admin-pending-count');
+        if (countEl) countEl.textContent = pending.length > 0 ? pending.length : '';
+        if (pending.length === 0) { el.innerHTML = '<div class="text-center py-12 text-slate-400">目前沒有待審核的申請</div>'; return; }
+        el.innerHTML = pending.map((p, i) => `
+            <div class="flex items-start justify-between p-4 border border-slate-200 rounded-xl mb-3 bg-slate-50">
+                <div>
+                    <p class="font-semibold text-slate-800">${p.displayName} <span class="text-slate-400 font-normal text-sm">@${p.username}</span></p>
+                    ${p.note ? `<p class="text-sm text-slate-500 mt-1">說明：${p.note}</p>` : ''}
+                    <p class="text-xs text-slate-400 mt-1">申請時間：${new Date(p.requestedAt).toLocaleString('zh-TW')}</p>
+                </div>
+                <div class="flex gap-2 ml-4 flex-shrink-0">
+                    <button onclick="approvePending(${i})" class="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg text-xs font-medium">核准</button>
+                    <button onclick="rejectPending(${i})" class="bg-red-100 hover:bg-red-200 text-red-600 px-3 py-1.5 rounded-lg text-xs font-medium">拒絕</button>
+                </div>
+            </div>`).join('');
+    } catch(e) { el.innerHTML = `<div class="text-center py-8 text-red-400">載入失敗：${e.message}</div>`; }
 }
 
-function approvePending(idx) {
-    const pending = getPending();
-    const p = pending[idx];
-    const users = getUsers();
-    users.push({ username: p.username, displayName: p.displayName, password: p.password, hashVer: HASH_VERSION, role: 'user', active: true, createdAt: new Date().toISOString() });
-    saveUsers(users);
-    pending.splice(idx, 1);
-    savePending(pending);
-    updatePendingBadge();
-    renderPendingList();
+async function approvePending(idx) {
+    showLoading('審核中...');
+    try {
+        const [pending, users] = await Promise.all([getPending(), getUsers()]);
+        const p = pending[idx];
+        users.push({ username: p.username, displayName: p.displayName, password: p.password, role: 'user', active: true, createdAt: new Date().toISOString() });
+        pending.splice(idx, 1);
+        await Promise.all([saveUsers(users), savePending(pending)]);
+        await updatePendingBadge();
+        renderPendingList();
+    } catch(e) { alert('操作失敗：' + e.message); }
+    finally { hideLoading(); }
 }
 
-function rejectPending(idx) {
+async function rejectPending(idx) {
     if (!confirm('確定要拒絕此申請並刪除？')) return;
-    const pending = getPending();
-    pending.splice(idx, 1);
-    savePending(pending);
-    updatePendingBadge();
-    renderPendingList();
+    showLoading('處理中...');
+    try {
+        const pending = await getPending();
+        pending.splice(idx, 1);
+        await savePending(pending);
+        await updatePendingBadge();
+        renderPendingList();
+    } catch(e) { alert('操作失敗：' + e.message); }
+    finally { hideLoading(); }
 }
 
-function renderUsersList() {
-    const users = getUsers();
+async function renderUsersList() {
     const el = document.getElementById('users-list');
-    el.innerHTML = users.map((u, i) => `
-        <div class="flex items-center justify-between p-4 border border-slate-200 rounded-xl mb-3 ${u.active ? 'bg-white' : 'bg-slate-50 opacity-60'}">
-            <div>
-                <p class="font-semibold text-slate-800">${u.displayName} <span class="text-slate-400 font-normal text-sm">@${u.username}</span>
-                    ${u.role === 'admin' ? '<span class="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">管理員</span>' : ''}
-                    ${!u.active ? '<span class="ml-2 text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full">停用</span>' : ''}
-                </p>
-                <p class="text-xs text-slate-400 mt-0.5">建立：${new Date(u.createdAt).toLocaleString('zh-TW')}</p>
-            </div>
-            ${u.username !== 'admin' ? `
-            <div class="flex gap-2 ml-4">
-                <button onclick="toggleUser(${i})" class="${u.active ? 'bg-yellow-100 hover:bg-yellow-200 text-yellow-700' : 'bg-green-100 hover:bg-green-200 text-green-700'} px-3 py-1.5 rounded-lg text-xs font-medium transition-colors">
-                    ${u.active ? '停用' : '啟用'}
-                </button>
-                <button onclick="deleteUser(${i})" class="bg-red-100 hover:bg-red-200 text-red-600 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors">刪除</button>
-            </div>` : '<span class="text-xs text-slate-400 ml-4">系統帳號</span>'}
-        </div>
-    `).join('');
+    el.innerHTML = '<div class="text-center py-8 text-slate-400"><span class="spinner spinner-dark"></span></div>';
+    try {
+        const users = await getUsers();
+        el.innerHTML = users.map((u, i) => `
+            <div class="flex items-center justify-between p-4 border border-slate-200 rounded-xl mb-3 ${u.active ? 'bg-white' : 'bg-slate-50 opacity-60'}">
+                <div>
+                    <p class="font-semibold text-slate-800">${u.displayName} <span class="text-slate-400 font-normal text-sm">@${u.username}</span>
+                        ${u.role === 'admin' ? '<span class="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">管理員</span>' : ''}
+                        ${!u.active ? '<span class="ml-2 text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full">停用</span>' : ''}
+                    </p>
+                    <p class="text-xs text-slate-400 mt-0.5">建立：${new Date(u.createdAt).toLocaleString('zh-TW')}</p>
+                </div>
+                ${u.username !== 'admin' ? `
+                <div class="flex gap-2 ml-4">
+                    <button onclick="toggleUser(${i})" class="${u.active ? 'bg-yellow-100 hover:bg-yellow-200 text-yellow-700' : 'bg-green-100 hover:bg-green-200 text-green-700'} px-3 py-1.5 rounded-lg text-xs font-medium">${u.active ? '停用' : '啟用'}</button>
+                    <button onclick="deleteUser(${i})" class="bg-red-100 hover:bg-red-200 text-red-600 px-3 py-1.5 rounded-lg text-xs font-medium">刪除</button>
+                </div>` : '<span class="text-xs text-slate-400 ml-4">系統帳號</span>'}
+            </div>`).join('');
+    } catch(e) { el.innerHTML = `<div class="text-center py-8 text-red-400">載入失敗：${e.message}</div>`; }
 }
 
-function toggleUser(idx) {
-    const users = getUsers();
-    users[idx].active = !users[idx].active;
-    saveUsers(users);
-    renderUsersList();
+async function toggleUser(idx) {
+    showLoading('更新中...');
+    try {
+        const users = await getUsers();
+        users[idx].active = !users[idx].active;
+        await saveUsers(users);
+        renderUsersList();
+    } catch(e) { alert('操作失敗：' + e.message); }
+    finally { hideLoading(); }
 }
 
-function deleteUser(idx) {
+async function deleteUser(idx) {
     if (!confirm('確定要刪除此帳號？此操作無法復原。')) return;
-    const users = getUsers();
-    users.splice(idx, 1);
-    saveUsers(users);
-    renderUsersList();
+    showLoading('刪除中...');
+    try {
+        const users = await getUsers();
+        users.splice(idx, 1);
+        await saveUsers(users);
+        renderUsersList();
+    } catch(e) { alert('操作失敗：' + e.message); }
+    finally { hideLoading(); }
 }
 
-function adminAddUser() {
+async function adminAddUser() {
     const username = document.getElementById('add-username').value.trim();
     const displayName = document.getElementById('add-displayname').value.trim();
     const password = document.getElementById('add-password').value;
@@ -651,45 +723,54 @@ function adminAddUser() {
     if (!/^[a-zA-Z0-9_]{4,20}$/.test(username)) { setMsg('add-user-msg', '帳號格式不正確 (英數字 4~20 字元)'); return; }
     if (password.length < 6) { setMsg('add-user-msg', '密碼至少 6 字元'); return; }
 
-    const users = getUsers();
-    if (users.find(u => u.username === username)) { setMsg('add-user-msg', '此帳號名稱已存在'); return; }
-
-    users.push({ username, displayName, password: hashSimple(password), hashVer: HASH_VERSION, role, active: true, createdAt: new Date().toISOString() });
-    saveUsers(users);
-
-    document.getElementById('add-username').value = '';
-    document.getElementById('add-displayname').value = '';
-    document.getElementById('add-password').value = '';
-    setMsg('add-user-msg', `帳號 ${username} 已成功建立！`, false);
+    setBtn('add-user-btn', true, '新增中...');
+    try {
+        const users = await getUsers();
+        if (users.find(u => u.username === username)) { setMsg('add-user-msg', '此帳號名稱已存在'); return; }
+        users.push({ username, displayName, password: hashPwd(password), role, active: true, createdAt: new Date().toISOString() });
+        await saveUsers(users);
+        document.getElementById('add-username').value = '';
+        document.getElementById('add-displayname').value = '';
+        document.getElementById('add-password').value = '';
+        setMsg('add-user-msg', `帳號 ${username} 已成功建立！`, false);
+    } catch(e) { setMsg('add-user-msg', '建立失敗：' + e.message); }
+    finally { setBtn('add-user-btn', false, '新增帳號'); }
 }
 
 // ============================================================
-//  啟動：清除舊版 key（v1 換 v2），然後檢查 session
+//  啟動流程
 // ============================================================
-try {
-    if (localStorage.getItem('biz_users') !== null) {
-        localStorage.removeItem('biz_users');    // 舊版 key 清除
-        localStorage.removeItem('biz_pending');
-        localStorage.removeItem('biz_session');
-        console.info('[Auth] 已清除舊版 v1 資料，採用新版儲存格式。');
+async function startApp() {
+    const cfg = getCfg();
+    if (!cfg || !cfg.apiKey || !cfg.usersBinId) {
+        // 沒有設定，顯示設定頁
+        document.getElementById('setup-page').classList.remove('hidden-element');
+        return;
     }
-} catch(e) {}
 
-ensureAdmin();
-const existingSession = getSession();
-if (existingSession) {
-    const users = getUsers();
-    const user = users.find(u => u.username === existingSession.username && u.active);
-    if (user) {
-        document.getElementById('auth-page').classList.add('hidden-element');
-        enterApp(user);
-    } else {
-        clearSession();
+    // 有設定，檢查 session
+    const session = getSession();
+    if (session) {
+        showLoading('驗證登入狀態...');
+        try {
+            const users = await getUsers();
+            const user = users.find(u => u.username === session.username && u.active);
+            if (user) { enterApp(user); return; }
+            else { clearSession(); }
+        } catch(e) {
+            // 連線失敗時，允許進入登入頁讓用戶重試
+        } finally { hideLoading(); }
     }
+
+    // 顯示登入頁
+    document.getElementById('auth-page').classList.remove('hidden-element');
 }
 
+// 啟動
+startApp();
+
 // ============================================================
-//  以下為原始業績分析程式碼（完整保留）
+//  業績分析程式碼
 // ============================================================
 let rawData = [];
 let filters = { rep: '', hospitals: [], categories: [], products: [], months: ['1月', '2月', '3月'] };
@@ -703,14 +784,11 @@ const ICON_UP = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" 
 const ICON_DOWN = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-red-500"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline><polyline points="16 18 23 18 23 11"></polyline></svg>`;
 const ICON_MINUS = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-yellow-500"><line x1="5" y1="12" x2="19" y2="12"></line></svg>`;
 const ICON_CHECK = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="text-white"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
-
 const formatMoney = (num) => new Intl.NumberFormat('en-US').format(Math.round(num));
 
 function showError(msg) {
-    const errContainer = document.getElementById('error-container');
-    const errMsg = document.getElementById('error-message');
-    if (msg) { errMsg.textContent = msg; errContainer.classList.remove('hidden-element'); }
-    else { errContainer.classList.add('hidden-element'); }
+    const c = document.getElementById('error-container'), m = document.getElementById('error-message');
+    if (msg) { m.textContent = msg; c.classList.remove('hidden-element'); } else { c.classList.add('hidden-element'); }
 }
 
 function extractTransactions(aoa) {
@@ -728,21 +806,19 @@ function extractTransactions(aoa) {
     if (!format) return null;
     const txs = [];
     for (let i = headerIdx + 1; i < aoa.length; i++) {
-        const rowArr = aoa[i];
-        if (!rowArr || rowArr.length === 0) continue;
-        const row = {};
-        headers.forEach((h, idx) => { row[h] = rowArr[idx]; });
+        const rowArr = aoa[i]; if (!rowArr || rowArr.length === 0) continue;
+        const row = {}; headers.forEach((h, idx) => { row[h] = rowArr[idx]; });
         const rep = String(row['業代碼'] || '').trim() || '未分派';
         const category = String(row['類別'] || '').trim() || '未分類';
-        const rawProductName = String(row['產品名稱'] || '').trim();
-        const rawProductSeries = String(row['產品系列'] || '').trim();
-        let product = rawProductName || rawProductSeries || '未知產品';
+        const rawPN = String(row['產品名稱'] || '').trim();
+        const rawPS = String(row['產品系列'] || '').trim();
+        let product = rawPN || rawPS || '未知產品';
         const hospital = String(row['客戶名稱'] || row['客戶'] || '').trim();
         if (!hospital) continue;
-        const searchStr = (rawProductName + ' ' + rawProductSeries).toUpperCase();
-        if (searchStr.includes('LOTE')) product = 'Lote FC';
-        else if (searchStr.includes('UBIXA 5') || searchStr.includes('EXPREXA 5') || searchStr.includes('XPREXA 5')) product = 'Xprexa 5mg';
-        else if (searchStr.includes('UBIXA 10') || searchStr.includes('EXPREXA 10') || searchStr.includes('XPREXA 10')) product = 'Xprexa 10mg';
+        const s = (rawPN + ' ' + rawPS).toUpperCase();
+        if (s.includes('LOTE')) product = 'Lote FC';
+        else if (s.includes('UBIXA 5') || s.includes('EXPREXA 5') || s.includes('XPREXA 5')) product = 'Xprexa 5mg';
+        else if (s.includes('UBIXA 10') || s.includes('EXPREXA 10') || s.includes('XPREXA 10')) product = 'Xprexa 10mg';
         if (format === 'pivot') {
             if (!row['數值'] || !String(row['數值']).includes('業績金額')) continue;
             headers.forEach(key => {
@@ -751,7 +827,7 @@ function extractTransactions(aoa) {
                     if (val !== 0) txs.push({ rep, category, product, hospital, month: String(key), amount: val });
                 }
             });
-        } else if (format === 'flat') {
+        } else {
             const val = parseFloat(String(row['業績金額'] || '').replace(/,/g, '')) || 0;
             if (val !== 0) txs.push({ rep, category, product, hospital, month: String(row['年月']), amount: val });
         }
@@ -760,355 +836,199 @@ function extractTransactions(aoa) {
 }
 
 document.getElementById('file-upload').addEventListener('change', function(e) {
-    const file = e.target.files[0];
-    if (!file) return;
+    const file = e.target.files[0]; if (!file) return;
     const btnText = document.getElementById('upload-btn-text');
-    btnText.textContent = '處理中...';
-    showError('');
-    const fileExt = file.name.split('.').pop().toLowerCase();
-    if (fileExt === 'csv') {
+    btnText.textContent = '處理中...'; showError('');
+    const ext = file.name.split('.').pop().toLowerCase();
+    if (ext === 'csv') {
         const reader = new FileReader();
-        reader.onload = (e) => {
-            Papa.parse(e.target.result, { header: false, skipEmptyLines: true, complete: (results) => {
-                const txs = extractTransactions(results.data);
-                if (txs && txs.length > 0) initializeData(txs);
-                else showError('無法從 CSV 中識別正確的業績資料。');
-                btnText.textContent = '載入出貨明細';
-            }, error: (err) => { showError('CSV 解析失敗：' + err.message); btnText.textContent = '載入出貨明細'; } });
-        };
+        reader.onload = (e) => { Papa.parse(e.target.result, { header: false, skipEmptyLines: true, complete: (r) => { const txs = extractTransactions(r.data); if (txs && txs.length > 0) initializeData(txs); else showError('無法從 CSV 識別業績資料。'); btnText.textContent = '載入出貨明細'; }, error: (e) => { showError('CSV 解析失敗：' + e.message); btnText.textContent = '載入出貨明細'; } }); };
         reader.readAsText(file);
-    } else if (fileExt === 'xlsx' || fileExt === 'xls') {
+    } else if (ext === 'xlsx' || ext === 'xls') {
         const reader = new FileReader();
         reader.onload = (e) => {
             try {
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, { type: 'array' });
-                let foundTxs = null;
-                const prioritizedSheets = [...workbook.SheetNames].sort((a, b) => {
-                    if (a.toUpperCase().includes('出貨') || a.toUpperCase().includes('DATA')) return -1;
-                    if (b.toUpperCase().includes('出貨') || b.toUpperCase().includes('DATA')) return 1;
-                    return 0;
-                });
-                for (let sheetName of prioritizedSheets) {
-                    const worksheet = workbook.Sheets[sheetName];
-                    const aoa = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
-                    const txs = extractTransactions(aoa);
-                    if (txs && txs.length > 0) { foundTxs = txs; break; }
-                }
-                if (foundTxs) initializeData(foundTxs);
-                else showError('無法在 Excel 檔案中找到有效的業績資料。');
-            } catch (err) { showError('Excel 解析失敗：' + err.message); }
+                const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+                let found = null;
+                [...wb.SheetNames].sort((a,b) => { if(a.toUpperCase().includes('出貨')||a.toUpperCase().includes('DATA')) return -1; if(b.toUpperCase().includes('出貨')||b.toUpperCase().includes('DATA')) return 1; return 0; }).forEach(n => { if(!found){ const txs = extractTransactions(XLSX.utils.sheet_to_json(wb.Sheets[n],{header:1,defval:''})); if(txs&&txs.length>0) found=txs; } });
+                if (found) initializeData(found); else showError('無法在 Excel 找到有效業績資料。');
+            } catch(e) { showError('Excel 解析失敗：' + e.message); }
             btnText.textContent = '載入出貨明細';
         };
         reader.readAsArrayBuffer(file);
-    } else {
-        showError('不支援的檔案格式，請上傳 CSV 或 Excel 檔案。');
-        btnText.textContent = '載入出貨明細';
-    }
+    } else { showError('請上傳 CSV 或 Excel。'); btnText.textContent = '載入出貨明細'; }
 });
 
 function initializeData(txs) {
-    rawData = txs;
-    filters = { rep: '', hospitals: [], categories: [], products: [], months: filters.months.length > 0 ? filters.months : ['1月', '2月', '3月'] };
-    selectedHospital = null;
-    latestDataMonth = '202501';
+    rawData = txs; filters = { rep: '', hospitals: [], categories: [], products: [], months: filters.months.length > 0 ? filters.months : ['1月','2月','3月'] };
+    selectedHospital = null; latestDataMonth = '202501';
     rawData.forEach(tx => { if (tx.month > latestDataMonth) latestDataMonth = tx.month; });
     document.getElementById('empty-state').classList.add('hidden-element');
     document.getElementById('main-content').classList.remove('hidden-element');
-    updateFiltersUI('init');
-    calculateAndRender();
+    updateFiltersUI('init'); calculateAndRender();
 }
 
 class MultiSelect {
-    constructor(containerId, label, placeholder, type, iconSvg = null, emptyMeansAll = true) {
-        this.container = document.getElementById(containerId);
-        this.label = label; this.placeholder = placeholder; this.type = type;
-        this.iconSvg = iconSvg || `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-500 flex-shrink-0"><polyline points="6 9 12 15 18 9"></polyline></svg>`;
-        this.emptyMeansAll = emptyMeansAll; this.options = []; this.selected = []; this.isOpen = false; this.searchTerm = '';
-        this.render();
+    constructor(cId, label, ph, type, icon=null, ema=true) {
+        this.container=document.getElementById(cId); this.label=label; this.placeholder=ph; this.type=type;
+        this.iconSvg=icon||`<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-500 flex-shrink-0"><polyline points="6 9 12 15 18 9"></polyline></svg>`;
+        this.emptyMeansAll=ema; this.options=[]; this.selected=[]; this.isOpen=false; this.searchTerm=''; this.render();
     }
-    setOptions(newOptions, isInit = false) {
-        const wasAllSelected = this.options.length > 0 && this.selected.length === this.options.length;
-        this.options = newOptions;
-        if (isInit || wasAllSelected) { this.selected = [...newOptions]; }
-        else {
-            this.selected = this.selected.filter(s => newOptions.includes(s));
-            if (this.selected.length === 0 && newOptions.length > 0) this.selected = [...newOptions];
-        }
-        filters[this.type] = this.selected; this.updateDisplay();
-        if (this.isOpen) this.renderDropdownOptions();
+    setOptions(opts, isInit=false) {
+        const wasAll = this.options.length>0 && this.selected.length===this.options.length;
+        this.options=opts;
+        if(isInit||wasAll) { this.selected=[...opts]; }
+        else { this.selected=this.selected.filter(s=>opts.includes(s)); if(this.selected.length===0&&opts.length>0) this.selected=[...opts]; }
+        filters[this.type]=this.selected; this.updateDisplay(); if(this.isOpen) this.renderDropdownOptions();
     }
-    toggle() { this.isOpen = !this.isOpen; if (!this.isOpen) this.searchTerm = ''; this.renderDropdown(); }
-    close() { if (this.isOpen) { this.isOpen = false; this.searchTerm = ''; this.renderDropdown(); } }
-    toggleOption(opt, el) {
-        if (this.selected.includes(opt)) this.selected = this.selected.filter(item => item !== opt);
-        else this.selected.push(opt);
-        if (this.type === 'months') this.selected.sort((a, b) => parseInt(a) - parseInt(b));
-        filters[this.type] = this.selected; this.updateDisplay();
-        const isChecked = this.selected.includes(opt);
-        const box = el.querySelector('.checkbox-box');
-        if (isChecked) { box.classList.remove('border-slate-300'); box.classList.add('bg-blue-600', 'border-blue-600'); box.innerHTML = ICON_CHECK; }
-        else { box.classList.add('border-slate-300'); box.classList.remove('bg-blue-600', 'border-blue-600'); box.innerHTML = ''; }
-        selectedHospital = null; updateFiltersUI(this.type); calculateAndRender();
+    toggle() { this.isOpen=!this.isOpen; if(!this.isOpen) this.searchTerm=''; this.renderDropdown(); }
+    close() { if(this.isOpen){this.isOpen=false;this.searchTerm='';this.renderDropdown();} }
+    toggleOption(opt,el) {
+        if(this.selected.includes(opt)) this.selected=this.selected.filter(i=>i!==opt); else this.selected.push(opt);
+        if(this.type==='months') this.selected.sort((a,b)=>parseInt(a)-parseInt(b));
+        filters[this.type]=this.selected; this.updateDisplay();
+        const isChk=this.selected.includes(opt); const box=el.querySelector('.checkbox-box');
+        if(isChk){box.classList.remove('border-slate-300');box.classList.add('bg-blue-600','border-blue-600');box.innerHTML=ICON_CHECK;}
+        else{box.classList.add('border-slate-300');box.classList.remove('bg-blue-600','border-blue-600');box.innerHTML='';}
+        selectedHospital=null; updateFiltersUI(this.type); calculateAndRender();
     }
-    selectAll(selectAll) {
-        this.selected = selectAll ? [...this.options] : [];
-        filters[this.type] = this.selected; this.updateDisplay(); this.renderDropdownOptions();
-        selectedHospital = null; updateFiltersUI(this.type); calculateAndRender();
-    }
+    selectAll(s) { this.selected=s?[...this.options]:[]; filters[this.type]=this.selected; this.updateDisplay(); this.renderDropdownOptions(); selectedHospital=null; updateFiltersUI(this.type); calculateAndRender(); }
     updateDisplay() {
-        const textSpan = this.container.querySelector('.ms-text');
-        if (!textSpan) return;
-        if (this.selected.length === this.options.length && this.options.length > 0) textSpan.textContent = this.placeholder;
-        else if (this.selected.length === 0) textSpan.textContent = this.emptyMeansAll ? this.placeholder : '未選擇';
-        else if (this.selected.length === 1) textSpan.textContent = this.selected[0];
-        else if (this.type === 'months') textSpan.textContent = this.selected.length <= 4 ? this.selected.join(', ') : `已選 ${this.selected.length} 個月`;
-        else textSpan.textContent = `已選 ${this.selected.length} 項`;
+        const t=this.container.querySelector('.ms-text'); if(!t) return;
+        if(this.selected.length===this.options.length&&this.options.length>0) t.textContent=this.placeholder;
+        else if(this.selected.length===0) t.textContent=this.emptyMeansAll?this.placeholder:'未選擇';
+        else if(this.selected.length===1) t.textContent=this.selected[0];
+        else if(this.type==='months') t.textContent=this.selected.length<=4?this.selected.join(', '):`已選 ${this.selected.length} 個月`;
+        else t.textContent=`已選 ${this.selected.length} 項`;
     }
     render() {
-        const labelStyle = this.type === 'months' ? 'text-blue-600' : 'text-slate-600';
-        const bgStyle = this.type === 'months' ? 'bg-blue-50 border-blue-200 text-blue-800' : 'bg-slate-50 border-slate-200 text-slate-700';
-        this.container.innerHTML = `
-            <label class="block text-sm font-medium ${labelStyle} mb-1 flex items-center gap-1">
-                ${this.type === 'months' ? '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>' : ''}
-                ${this.label}
-            </label>
-            <div class="relative ms-wrapper">
-                <div class="w-full border rounded-lg p-2 cursor-pointer flex justify-between items-center focus:ring-2 focus:ring-blue-500 min-h-[42px] ms-btn ${bgStyle}">
-                    <span class="text-sm flex-1 truncate pr-2 ms-text font-medium">${this.placeholder}</span>
-                    ${this.iconSvg}
-                </div>
-                <div class="ms-dropdown-container"></div>
-            </div>`;
-        this.container.querySelector('.ms-btn').addEventListener('click', (e) => { e.stopPropagation(); this.toggle(); });
+        const ls=this.type==='months'?'text-blue-600':'text-slate-600';
+        const bs=this.type==='months'?'bg-blue-50 border-blue-200 text-blue-800':'bg-slate-50 border-slate-200 text-slate-700';
+        this.container.innerHTML=`<label class="block text-sm font-medium ${ls} mb-1 flex items-center gap-1">${this.type==='months'?'<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>':''} ${this.label}</label><div class="relative ms-wrapper"><div class="w-full border rounded-lg p-2 cursor-pointer flex justify-between items-center min-h-[42px] ms-btn ${bs}"><span class="text-sm flex-1 truncate pr-2 ms-text font-medium">${this.placeholder}</span>${this.iconSvg}</div><div class="ms-dropdown-container"></div></div>`;
+        this.container.querySelector('.ms-btn').addEventListener('click',(e)=>{e.stopPropagation();this.toggle();});
     }
     renderDropdown() {
-        const dropContainer = this.container.querySelector('.ms-dropdown-container');
-        if (!this.isOpen) { dropContainer.innerHTML = ''; return; }
-        dropContainer.innerHTML = `
-            <div class="fixed inset-0 z-40 ms-overlay"></div>
-            <div class="absolute z-50 mt-1 w-full bg-white border border-slate-200 rounded-lg shadow-xl flex flex-col max-h-[350px] overflow-hidden">
-                <div class="p-2 border-b border-slate-100 bg-slate-50 flex flex-col gap-2">
-                    ${this.type !== 'months' ? `<div class="relative"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="absolute left-2.5 top-2.5 text-slate-400"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg><input type="text" class="w-full pl-8 pr-2 py-1.5 text-sm border border-slate-200 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 ms-search" placeholder="搜尋..." value="${this.searchTerm}"></div>` : ''}
-                    <div class="flex justify-between px-1 ${this.type === 'months' ? 'mt-1' : ''}">
-                        <button class="text-xs text-blue-600 hover:text-blue-800 font-medium select-all-btn">全選</button>
-                        <button class="text-xs text-slate-500 hover:text-slate-700 font-medium deselect-all-btn">取消全選</button>
-                    </div>
-                </div>
-                <div class="overflow-y-auto flex-1 p-1 ms-options-list"></div>
-            </div>`;
+        const dc=this.container.querySelector('.ms-dropdown-container');
+        if(!this.isOpen){dc.innerHTML='';return;}
+        dc.innerHTML=`<div class="fixed inset-0 z-40 ms-overlay"></div><div class="absolute z-50 mt-1 w-full bg-white border border-slate-200 rounded-lg shadow-xl flex flex-col max-h-[350px] overflow-hidden"><div class="p-2 border-b border-slate-100 bg-slate-50 flex flex-col gap-2">${this.type!=='months'?`<div class="relative"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="absolute left-2.5 top-2.5 text-slate-400"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg><input type="text" class="w-full pl-8 pr-2 py-1.5 text-sm border border-slate-200 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 ms-search" placeholder="搜尋..." value="${this.searchTerm}"></div>`:''}<div class="flex justify-between px-1 ${this.type==='months'?'mt-1':''}"><button class="text-xs text-blue-600 hover:text-blue-800 font-medium select-all-btn">全選</button><button class="text-xs text-slate-500 hover:text-slate-700 font-medium deselect-all-btn">取消全選</button></div></div><div class="overflow-y-auto flex-1 p-1 ms-options-list"></div></div>`;
         this.renderDropdownOptions();
-        dropContainer.querySelector('.ms-overlay').addEventListener('click', (e) => { e.stopPropagation(); this.close(); });
-        if (this.type !== 'months') {
-            const searchInput = dropContainer.querySelector('.ms-search');
-            searchInput.addEventListener('click', e => e.stopPropagation());
-            searchInput.addEventListener('input', (e) => { this.searchTerm = e.target.value; this.renderDropdownOptions(); });
-        }
-        dropContainer.querySelector('.select-all-btn').addEventListener('click', (e) => { e.stopPropagation(); this.selectAll(true); });
-        dropContainer.querySelector('.deselect-all-btn').addEventListener('click', (e) => { e.stopPropagation(); this.selectAll(false); });
+        dc.querySelector('.ms-overlay').addEventListener('click',(e)=>{e.stopPropagation();this.close();});
+        if(this.type!=='months'){const si=dc.querySelector('.ms-search');si.addEventListener('click',e=>e.stopPropagation());si.addEventListener('input',(e)=>{this.searchTerm=e.target.value;this.renderDropdownOptions();});}
+        dc.querySelector('.select-all-btn').addEventListener('click',(e)=>{e.stopPropagation();this.selectAll(true);});
+        dc.querySelector('.deselect-all-btn').addEventListener('click',(e)=>{e.stopPropagation();this.selectAll(false);});
     }
     renderDropdownOptions() {
-        const listContainer = this.container.querySelector('.ms-options-list');
-        if (!listContainer) return;
-        const filtered = this.options.filter(opt => opt.toLowerCase().includes(this.searchTerm.toLowerCase()));
-        if (filtered.length === 0) { listContainer.innerHTML = `<div class="px-3 py-4 text-sm text-center text-slate-400">找不到符合的選項</div>`; return; }
-        listContainer.innerHTML = filtered.map(opt => {
-            const isChecked = this.selected.includes(opt);
-            return `<div class="flex items-center px-3 py-2 hover:bg-slate-100 cursor-pointer rounded transition-colors ms-opt" data-val="${opt}">
-                <div class="checkbox-box w-4 h-4 mr-3 border rounded flex flex-shrink-0 items-center justify-center transition-colors ${isChecked ? 'bg-blue-600 border-blue-600' : 'border-slate-300'}">${isChecked ? ICON_CHECK : ''}</div>
-                <span class="text-sm text-slate-700">${opt}</span>
-            </div>`;
-        }).join('');
-        listContainer.querySelectorAll('.ms-opt').forEach(el => {
-            el.addEventListener('click', (e) => { e.stopPropagation(); this.toggleOption(el.getAttribute('data-val'), el); });
-        });
+        const lc=this.container.querySelector('.ms-options-list'); if(!lc) return;
+        const filtered=this.options.filter(o=>o.toLowerCase().includes(this.searchTerm.toLowerCase()));
+        if(filtered.length===0){lc.innerHTML=`<div class="px-3 py-4 text-sm text-center text-slate-400">找不到符合的選項</div>`;return;}
+        lc.innerHTML=filtered.map(opt=>{const isChk=this.selected.includes(opt);return`<div class="flex items-center px-3 py-2 hover:bg-slate-100 cursor-pointer rounded transition-colors ms-opt" data-val="${opt}"><div class="checkbox-box w-4 h-4 mr-3 border rounded flex flex-shrink-0 items-center justify-center transition-colors ${isChk?'bg-blue-600 border-blue-600':'border-slate-300'}">${isChk?ICON_CHECK:''}</div><span class="text-sm text-slate-700">${opt}</span></div>`;}).join('');
+        lc.querySelectorAll('.ms-opt').forEach(el=>{el.addEventListener('click',(e)=>{e.stopPropagation();this.toggleOption(el.getAttribute('data-val'),el);});});
     }
 }
 
-const monthMultiSelect = new MultiSelect('month-multiselect', '比較基準 (2026年月份複選)', '全部月份 (全年均)', 'months', null, false);
-monthMultiSelect.options = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
-monthMultiSelect.selected = filters.months;
-monthMultiSelect.updateDisplay();
+const monthMultiSelect = new MultiSelect('month-multiselect','比較基準 (2026年月份複選)','全部月份 (全年均)','months',null,false);
+monthMultiSelect.options=['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+monthMultiSelect.selected=filters.months; monthMultiSelect.updateDisplay();
+const hospMultiSelect = new MultiSelect('hospital-multiselect','醫院 (可多選)','全部醫院','hospitals',null,true);
+const catMultiSelect = new MultiSelect('category-multiselect','產品類別 (可多選)','全部類別','categories',null,true);
+const prodMultiSelect = new MultiSelect('product-multiselect','單一產品 (智慧連動與搜尋)','全部產品','products',null,true);
 
-const hospMultiSelect = new MultiSelect('hospital-multiselect', '醫院 (可多選)', '全部醫院', 'hospitals', null, true);
-const catMultiSelect = new MultiSelect('category-multiselect', '產品類別 (可多選)', '全部類別', 'categories', null, true);
-const prodMultiSelect = new MultiSelect('product-multiselect', '單一產品 (智慧連動與搜尋)', '全部產品', 'products', null, true);
+document.getElementById('rep-filter').addEventListener('change',(e)=>{ filters.rep=e.target.value; selectedHospital=null; updateFiltersUI('rep'); calculateAndRender(); });
 
-document.getElementById('rep-filter').addEventListener('change', (e) => {
-    filters.rep = e.target.value; selectedHospital = null; updateFiltersUI('rep'); calculateAndRender();
-});
-
-function updateFiltersUI(changedSource = 'init') {
-    const reps = new Set(), hospitals = new Set(), categories = new Set(), products = new Set();
-    rawData.forEach(row => {
-        if (row.rep) reps.add(row.rep);
-        const matchRep = !filters.rep || row.rep === filters.rep;
-        if (matchRep) { if (row.hospital) hospitals.add(row.hospital); if (row.category) categories.add(row.category); }
-        const matchHosp = filters.hospitals.length === 0 || filters.hospitals.includes(row.hospital);
-        const matchCat = filters.categories.length === 0 || filters.categories.includes(row.category);
-        if (matchRep && matchHosp && matchCat) { if (row.product) products.add(row.product); }
+function updateFiltersUI(src='init') {
+    const reps=new Set(),hospitals=new Set(),categories=new Set(),products=new Set();
+    rawData.forEach(row=>{
+        if(row.rep) reps.add(row.rep);
+        const mr=!filters.rep||row.rep===filters.rep;
+        if(mr){if(row.hospital) hospitals.add(row.hospital); if(row.category) categories.add(row.category);}
+        const mh=filters.hospitals.length===0||filters.hospitals.includes(row.hospital);
+        const mc=filters.categories.length===0||filters.categories.includes(row.category);
+        if(mr&&mh&&mc){if(row.product) products.add(row.product);}
     });
-    if (changedSource === 'init') {
-        const repSelect = document.getElementById('rep-filter');
-        repSelect.innerHTML = '<option value="">全部業務</option>' + Array.from(reps).sort().map(r => `<option value="${r}">${r}</option>`).join('');
-        repSelect.value = filters.rep;
-    }
-    if (changedSource === 'init' || changedSource === 'rep') {
-        hospMultiSelect.setOptions(Array.from(hospitals).sort(), changedSource === 'init');
-        catMultiSelect.setOptions(Array.from(categories).sort(), changedSource === 'init');
-    }
-    prodMultiSelect.setOptions(Array.from(products).sort(), changedSource === 'init');
+    if(src==='init'){const rs=document.getElementById('rep-filter');rs.innerHTML='<option value="">全部業務</option>'+Array.from(reps).sort().map(r=>`<option value="${r}">${r}</option>`).join('');rs.value=filters.rep;}
+    if(src==='init'||src==='rep'){hospMultiSelect.setOptions(Array.from(hospitals).sort(),src==='init');catMultiSelect.setOptions(Array.from(categories).sort(),src==='init');}
+    prodMultiSelect.setOptions(Array.from(products).sort(),src==='init');
 }
 
 function calculateAndRender() {
-    let filteredData = rawData;
-    if (filters.rep) filteredData = filteredData.filter(row => row.rep === filters.rep);
-    if (filters.hospitals.length > 0) filteredData = filteredData.filter(row => filters.hospitals.includes(row.hospital));
-    if (filters.categories.length > 0) filteredData = filteredData.filter(row => filters.categories.includes(row.category));
-    if (filters.products.length > 0) filteredData = filteredData.filter(row => filters.products.includes(row.product));
-
-    const hospitalMap = {};
-    filteredData.forEach(tx => {
-        const { hospital, rep, category, product, month, amount } = tx;
-        if (!hospitalMap[hospital]) hospitalMap[hospital] = { name: hospital, rep, products: {}, months2025: Array(12).fill(0), months2026: Array(12).fill(0) };
-        if (!hospitalMap[hospital].products[product]) hospitalMap[hospital].products[product] = { name: product, category, months2025: Array(12).fill(0), months2026: Array(12).fill(0) };
-        const year = month.substring(0, 4);
-        const mIdx = parseInt(month.substring(4, 6), 10) - 1;
-        if (year === '2025' && mIdx >= 0 && mIdx < 12) { hospitalMap[hospital].months2025[mIdx] += amount; hospitalMap[hospital].products[product].months2025[mIdx] += amount; }
-        else if (year === '2026' && mIdx >= 0 && mIdx < 12) { hospitalMap[hospital].months2026[mIdx] += amount; hospitalMap[hospital].products[product].months2026[mIdx] += amount; }
+    let fd=rawData;
+    if(filters.rep) fd=fd.filter(r=>r.rep===filters.rep);
+    if(filters.hospitals.length>0) fd=fd.filter(r=>filters.hospitals.includes(r.hospital));
+    if(filters.categories.length>0) fd=fd.filter(r=>filters.categories.includes(r.category));
+    if(filters.products.length>0) fd=fd.filter(r=>filters.products.includes(r.product));
+    const hm={};
+    fd.forEach(tx=>{
+        const{hospital,rep,category,product,month,amount}=tx;
+        if(!hm[hospital]) hm[hospital]={name:hospital,rep,products:{},months2025:Array(12).fill(0),months2026:Array(12).fill(0)};
+        if(!hm[hospital].products[product]) hm[hospital].products[product]={name:product,category,months2025:Array(12).fill(0),months2026:Array(12).fill(0)};
+        const yr=month.substring(0,4),mi=parseInt(month.substring(4,6),10)-1;
+        if(yr==='2025'&&mi>=0&&mi<12){hm[hospital].months2025[mi]+=amount;hm[hospital].products[product].months2025[mi]+=amount;}
+        else if(yr==='2026'&&mi>=0&&mi<12){hm[hospital].months2026[mi]+=amount;hm[hospital].products[product].months2026[mi]+=amount;}
     });
-
-    const determineStatus = (g) => g > 5 ? { label: '成長', icon: ICON_UP, color: 'text-green-600' } : g < -5 ? { label: '衰退', icon: ICON_DOWN, color: 'text-red-600' } : { label: '持平', icon: ICON_MINUS, color: 'text-yellow-600' };
-
-    const calculateMetrics = (months2025, months2026) => {
-        const avg2025 = months2025.reduce((a, b) => a + b, 0) / 12;
-        let targetSum = 0;
-        const targetDivisor = filters.months.length || 1;
-        if (filters.months.length > 0) filters.months.forEach(mStr => { targetSum += months2026[parseInt(mStr.replace('月', '')) - 1]; });
-        const avgTarget = filters.months.length > 0 ? (targetSum / targetDivisor) : 0;
-        let targetLabel = filters.months.length === 0 ? '未選月份' : filters.months.length === 12 ? '26年全年均' : filters.months.length <= 4 ? `26年(${filters.months.map(m=>m.replace('月','')).join(',')})月均` : `26年(${filters.months.length}個月)均`;
-        let growthRate = avg2025 === 0 && avgTarget > 0 ? 100 : avg2025 > 0 ? ((avgTarget - avg2025) / avg2025) * 100 : 0;
-        return { avg2025: Math.round(avg2025), avgTarget: Math.round(avgTarget), targetLabel, growthRate: parseFloat(growthRate.toFixed(1)), status: determineStatus(growthRate), totalOverall: (avg2025 * 12) + targetSum };
+    const ds=g=>g>5?{label:'成長',icon:ICON_UP,color:'text-green-600'}:g<-5?{label:'衰退',icon:ICON_DOWN,color:'text-red-600'}:{label:'持平',icon:ICON_MINUS,color:'text-yellow-600'};
+    const cm=(m25,m26)=>{
+        const a25=m25.reduce((a,b)=>a+b,0)/12;
+        let ts=0; const td=filters.months.length||1;
+        if(filters.months.length>0) filters.months.forEach(ms=>{ts+=m26[parseInt(ms.replace('月',''))-1];});
+        const at=filters.months.length>0?(ts/td):0;
+        let tl=filters.months.length===0?'未選月份':filters.months.length===12?'26年全年均':filters.months.length<=4?`26年(${filters.months.map(m=>m.replace('月','')).join(',')})月均`:`26年(${filters.months.length}個月)均`;
+        let gr=a25===0&&at>0?100:a25>0?((at-a25)/a25)*100:0;
+        return{avg2025:Math.round(a25),avgTarget:Math.round(at),targetLabel:tl,growthRate:parseFloat(gr.toFixed(1)),status:ds(gr),totalOverall:(a25*12)+ts};
     };
-
-    processedData = Object.values(hospitalMap).map(h => {
-        const metrics = calculateMetrics(h.months2025, h.months2026);
-        const productDetails = Object.values(h.products).map(p => ({ ...p, ...calculateMetrics(p.months2025, p.months2026) })).sort((a, b) => b.totalOverall - a.totalOverall);
-        return { ...h, ...metrics, productDetails };
-    }).sort((a, b) => b.totalOverall - a.totalOverall).slice(0, 20);
-
-    let headerText = processedData.length > 0 ? processedData[0].targetLabel : '26年月均';
-    document.getElementById('th-top20-target').textContent = headerText;
-    document.getElementById('th-detail-target').textContent = headerText;
-
-    renderTop20Table();
-    renderRightPanel();
+    processedData=Object.values(hm).map(h=>{const m=cm(h.months2025,h.months2026);const pd=Object.values(h.products).map(p=>({...p,...cm(p.months2025,p.months2026)})).sort((a,b)=>b.totalOverall-a.totalOverall);return{...h,...m,productDetails:pd};}).sort((a,b)=>b.totalOverall-a.totalOverall).slice(0,20);
+    const ht=processedData.length>0?processedData[0].targetLabel:'26年月均';
+    document.getElementById('th-top20-target').textContent=ht; document.getElementById('th-detail-target').textContent=ht;
+    renderTop20Table(); renderRightPanel();
 }
 
 function renderTop20Table() {
-    const tbody = document.getElementById('top20-tbody');
-    if (processedData.length === 0) { tbody.innerHTML = `<tr><td colspan="4" class="text-center py-8 text-slate-500">查無符合條件的資料</td></tr>`; return; }
-    tbody.innerHTML = processedData.map((hospital, idx) => {
-        const isSelected = selectedHospital && selectedHospital.name === hospital.name;
-        return `<tr class="border-b border-slate-50 cursor-pointer transition-colors top20-row ${isSelected ? 'bg-blue-50 border-blue-200' : 'hover:bg-slate-50'}" data-index="${idx}">
-            <td class="px-4 py-3 font-medium text-slate-800"><span class="text-slate-400 mr-2">#${idx + 1}</span>${hospital.name}</td>
-            <td class="px-4 py-3 text-right text-slate-600">${formatMoney(hospital.avg2025)}</td>
-            <td class="px-4 py-3 text-right font-medium text-blue-700">${formatMoney(hospital.avgTarget)}</td>
-            <td class="px-4 py-3"><div class="flex items-center justify-center gap-1 font-semibold ${hospital.status.color}">${hospital.status.icon} ${hospital.growthRate}%</div></td>
-        </tr>`;
-    }).join('');
-    document.querySelectorAll('.top20-row').forEach(row => {
-        row.addEventListener('click', function() { selectedHospital = processedData[this.getAttribute('data-index')]; renderTop20Table(); renderRightPanel(); });
-    });
+    const tbody=document.getElementById('top20-tbody');
+    if(processedData.length===0){tbody.innerHTML=`<tr><td colspan="4" class="text-center py-8 text-slate-500">查無符合條件的資料</td></tr>`;return;}
+    tbody.innerHTML=processedData.map((h,i)=>{const isSel=selectedHospital&&selectedHospital.name===h.name;return`<tr class="border-b border-slate-50 cursor-pointer transition-colors top20-row ${isSel?'bg-blue-50 border-blue-200':'hover:bg-slate-50'}" data-index="${i}"><td class="px-4 py-3 font-medium text-slate-800"><span class="text-slate-400 mr-2">#${i+1}</span>${h.name}</td><td class="px-4 py-3 text-right text-slate-600">${formatMoney(h.avg2025)}</td><td class="px-4 py-3 text-right font-medium text-blue-700">${formatMoney(h.avgTarget)}</td><td class="px-4 py-3"><div class="flex items-center justify-center gap-1 font-semibold ${h.status.color}">${h.status.icon} ${h.growthRate}%</div></td></tr>`;}).join('');
+    document.querySelectorAll('.top20-row').forEach(row=>{row.addEventListener('click',function(){selectedHospital=processedData[this.getAttribute('data-index')];renderTop20Table();renderRightPanel();});});
 }
 
 function renderRightPanel() {
-    const emptyState = document.getElementById('hospital-empty');
-    const detailsState = document.getElementById('hospital-details');
-    if (!selectedHospital) { emptyState.classList.remove('hidden-element'); detailsState.classList.add('hidden-element'); return; }
-    emptyState.classList.add('hidden-element');
-    detailsState.classList.remove('hidden-element');
-    document.getElementById('detail-hosp-name').textContent = selectedHospital.name;
-    document.getElementById('detail-hosp-rep').textContent = `業代碼：${selectedHospital.rep}`;
-    const statusEl = document.getElementById('detail-hosp-status');
-    statusEl.className = `px-4 py-2 rounded-full flex items-center gap-2 font-bold text-lg bg-slate-50 ${selectedHospital.status.color}`;
-    statusEl.innerHTML = `${selectedHospital.status.label}: ${selectedHospital.growthRate}%`;
-    renderDetailTable();
+    const es=document.getElementById('hospital-empty'),ds=document.getElementById('hospital-details');
+    if(!selectedHospital){es.classList.remove('hidden-element');ds.classList.add('hidden-element');return;}
+    es.classList.add('hidden-element'); ds.classList.remove('hidden-element');
+    document.getElementById('detail-hosp-name').textContent=selectedHospital.name;
+    document.getElementById('detail-hosp-rep').textContent=`業代碼：${selectedHospital.rep}`;
+    const sel=document.getElementById('detail-hosp-status');
+    sel.className=`px-4 py-2 rounded-full flex items-center gap-2 font-bold text-lg bg-slate-50 ${selectedHospital.status.color}`;
+    sel.innerHTML=`${selectedHospital.status.label}: ${selectedHospital.growthRate}%`;
+    document.getElementById('detail-products-tbody').innerHTML=selectedHospital.productDetails.map(p=>`<tr class="border-b border-slate-50 hover:bg-slate-50"><td class="px-4 py-3 text-slate-500">${p.category}</td><td class="px-4 py-3 font-medium text-slate-700">${p.name}</td><td class="px-4 py-3 text-right text-slate-600">${formatMoney(p.avg2025)}</td><td class="px-4 py-3 text-right font-medium text-blue-700">${formatMoney(p.avgTarget)}</td><td class="px-4 py-3"><div class="flex items-center justify-center gap-1 font-semibold ${p.status.color}">${p.status.icon} ${p.growthRate}%</div></td></tr>`).join('');
     renderCharts();
 }
 
-function renderDetailTable() {
-    document.getElementById('detail-products-tbody').innerHTML = selectedHospital.productDetails.map(product => `
-        <tr class="border-b border-slate-50 hover:bg-slate-50">
-            <td class="px-4 py-3 text-slate-500">${product.category}</td>
-            <td class="px-4 py-3 font-medium text-slate-700">${product.name}</td>
-            <td class="px-4 py-3 text-right text-slate-600">${formatMoney(product.avg2025)}</td>
-            <td class="px-4 py-3 text-right font-medium text-blue-700">${formatMoney(product.avgTarget)}</td>
-            <td class="px-4 py-3"><div class="flex items-center justify-center gap-1 font-semibold ${product.status.color}">${product.status.icon} ${product.growthRate}%</div></td>
-        </tr>`).join('');
-}
-
-function calculateTrendLine(data, yKey) {
-    let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0, count = 0;
-    data.forEach((d, i) => { const y = Number(d[yKey]) || 0; sumX += i; sumY += y; sumXY += i * y; sumXX += i * i; count++; });
-    if (count === 0) return data;
-    const slope = (count * sumXY - sumX * sumY) / (count * sumXX - sumX * sumX);
-    const intercept = (sumY - slope * sumX) / count;
-    return data.map((d, i) => ({ ...d, [`${yKey}_trend`]: Math.max(0, slope * i + intercept) }));
+function calculateTrendLine(data,yKey) {
+    let sx=0,sy=0,sxy=0,sxx=0,n=0;
+    data.forEach((d,i)=>{const y=Number(d[yKey])||0;sx+=i;sy+=y;sxy+=i*y;sxx+=i*i;n++;});
+    if(n===0) return data;
+    const slope=(n*sxy-sx*sy)/(n*sxx-sx*sx)||0;
+    const intercept=(sy-slope*sx)/n;
+    return data.map((d,i)=>({...d,[`${yKey}_trend`]:Math.max(0,slope*i+intercept)}));
 }
 
 function renderCharts() {
-    let endMonth2026 = 12;
-    if (filters.months && filters.months.length > 0) endMonth2026 = Math.max(...filters.months.map(m => parseInt(m.replace('月', ''))));
-    else if (parseInt(latestDataMonth.substring(0, 4)) === 2026) endMonth2026 = parseInt(latestDataMonth.substring(4, 6));
-
-    const chartLabels = [], dataKeys = [];
-    for (let m = 1; m <= 12; m++) { chartLabels.push(`25/${String(m).padStart(2, '0')}`); dataKeys.push({ year: 2025, monthIdx: m - 1 }); }
-    for (let m = 1; m <= endMonth2026; m++) { chartLabels.push(`26/${String(m).padStart(2, '0')}`); dataKeys.push({ year: 2026, monthIdx: m - 1 }); }
-
-    let data = chartLabels.map((label, i) => {
-        const { year, monthIdx } = dataKeys[i];
-        const point = { month: label };
-        point.total = year === 2025 ? selectedHospital.months2025[monthIdx] : selectedHospital.months2026[monthIdx];
-        selectedHospital.productDetails.forEach(p => { point[p.name] = year === 2025 ? p.months2025[monthIdx] : p.months2026[monthIdx]; });
-        return point;
-    });
-    data = calculateTrendLine(data, 'total');
-    selectedHospital.productDetails.forEach(p => { data = calculateTrendLine(data, p.name); });
-
-    Chart.defaults.font.family = "'Inter', 'Helvetica Neue', sans-serif";
-    Chart.defaults.color = '#64748b';
-    const commonOptions = {
-        responsive: true, maintainAspectRatio: false,
-        interaction: { mode: 'index', intersect: false },
-        plugins: { tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label}: ${formatMoney(ctx.raw)}` } } },
-        scales: { x: { grid: { display: false } }, y: { grid: { color: '#e2e8f0', borderDash: [3, 3] }, ticks: { callback: (val) => `${val/1000}k` } } }
-    };
-
-    if (totalChartInstance) totalChartInstance.destroy();
-    totalChartInstance = new Chart(document.getElementById('totalChart'), {
-        type: 'line',
-        data: { labels: chartLabels, datasets: [
-            { label: '實際金額', data: data.map(d => d.total), borderColor: '#2563eb', backgroundColor: '#2563eb', tension: 0.3, borderWidth: 3, pointRadius: 4, pointHoverRadius: 6 },
-            { label: '線性趨勢線', data: data.map(d => d.total_trend), borderColor: '#94a3b8', borderDash: [5, 5], tension: 0, borderWidth: 2, pointRadius: 0 }
-        ]},
-        options: commonOptions
-    });
-
-    const colors = ['#f59e0b','#10b981','#ec4899','#8b5cf6','#06b6d4','#f43f5e','#f97316','#14b8a6','#6366f1'];
-    const productDatasets = [];
-    selectedHospital.productDetails.forEach((p, idx) => {
-        const color = colors[idx % colors.length];
-        productDatasets.push({ label: p.name, data: data.map(d => d[p.name]), borderColor: color, backgroundColor: color, tension: 0.3, borderWidth: 2, pointRadius: 3 });
-        productDatasets.push({ label: `${p.name} 趨勢`, data: data.map(d => d[`${p.name}_trend`]), borderColor: color, borderDash: [3, 3], tension: 0, borderWidth: 1, pointRadius: 0, backgroundColor: 'transparent' });
-    });
-
-    if (productChartInstance) productChartInstance.destroy();
-    productChartInstance = new Chart(document.getElementById('productChart'), {
-        type: 'line',
-        data: { labels: chartLabels, datasets: productDatasets },
-        options: { ...commonOptions, plugins: { ...commonOptions.plugins, legend: { position: 'top', labels: { boxWidth: 12, usePointStyle: true, filter: (item) => !item.text.includes('趨勢') } } } }
-    });
+    let em=12;
+    if(filters.months&&filters.months.length>0) em=Math.max(...filters.months.map(m=>parseInt(m.replace('月',''))));
+    else if(parseInt(latestDataMonth.substring(0,4))===2026) em=parseInt(latestDataMonth.substring(4,6));
+    const cl=[],dk=[];
+    for(let m=1;m<=12;m++){cl.push(`25/${String(m).padStart(2,'0')}`);dk.push({year:2025,monthIdx:m-1});}
+    for(let m=1;m<=em;m++){cl.push(`26/${String(m).padStart(2,'0')}`);dk.push({year:2026,monthIdx:m-1});}
+    let data=cl.map((label,i)=>{const{year,monthIdx}=dk[i];const pt={month:label};pt.total=year===2025?selectedHospital.months2025[monthIdx]:selectedHospital.months2026[monthIdx];selectedHospital.productDetails.forEach(p=>{pt[p.name]=year===2025?p.months2025[monthIdx]:p.months2026[monthIdx];});return pt;});
+    data=calculateTrendLine(data,'total');
+    selectedHospital.productDetails.forEach(p=>{data=calculateTrendLine(data,p.name);});
+    Chart.defaults.font.family="'Inter','Helvetica Neue',sans-serif"; Chart.defaults.color='#64748b';
+    const co={responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{tooltip:{callbacks:{label:(c)=>`${c.dataset.label}: ${formatMoney(c.raw)}`}}},scales:{x:{grid:{display:false}},y:{grid:{color:'#e2e8f0',borderDash:[3,3]},ticks:{callback:(v)=>`${v/1000}k`}}}};
+    if(totalChartInstance) totalChartInstance.destroy();
+    totalChartInstance=new Chart(document.getElementById('totalChart'),{type:'line',data:{labels:cl,datasets:[{label:'實際金額',data:data.map(d=>d.total),borderColor:'#2563eb',backgroundColor:'#2563eb',tension:0.3,borderWidth:3,pointRadius:4,pointHoverRadius:6},{label:'線性趨勢線',data:data.map(d=>d.total_trend),borderColor:'#94a3b8',borderDash:[5,5],tension:0,borderWidth:2,pointRadius:0}]},options:co});
+    const colors=['#f59e0b','#10b981','#ec4899','#8b5cf6','#06b6d4','#f43f5e','#f97316','#14b8a6','#6366f1'];
+    const pds=[];
+    selectedHospital.productDetails.forEach((p,i)=>{const c=colors[i%colors.length];pds.push({label:p.name,data:data.map(d=>d[p.name]),borderColor:c,backgroundColor:c,tension:0.3,borderWidth:2,pointRadius:3});pds.push({label:`${p.name} 趨勢`,data:data.map(d=>d[`${p.name}_trend`]),borderColor:c,borderDash:[3,3],tension:0,borderWidth:1,pointRadius:0,backgroundColor:'transparent'});});
+    if(productChartInstance) productChartInstance.destroy();
+    productChartInstance=new Chart(document.getElementById('productChart'),{type:'line',data:{labels:cl,datasets:pds},options:{...co,plugins:{...co.plugins,legend:{position:'top',labels:{boxWidth:12,usePointStyle:true,filter:(item)=>!item.text.includes('趨勢')}}}}});
 }
 </script>
 </body>
